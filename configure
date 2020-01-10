@@ -1565,6 +1565,10 @@ for opt do
   ;;
   --disable-gio) gio=no
   ;;
+  --lib-cosim=*) lib_cosim="yes"
+                 libcosim_libs="-L$optarg -lriscv -lsoftfloat -lfesvr -ldisasm -lpthread -ldl"
+                 libcosim_cflags="-I$optarg/riscv"
+  ;;
   *)
       echo "ERROR: unknown option $opt"
       echo "Try '$0 --help' for more information"
@@ -1919,6 +1923,7 @@ disabled with --disable-FEATURE, default is enabled if available
   fuse-lseek      SEEK_HOLE/SEEK_DATA support for FUSE exports
   multiprocess    Out of process device emulation support
   gio             libgio support
+  libcosim        libcosim suport
 
 NOTE: The object files are built at the place where configure is launched
 EOF
@@ -6023,6 +6028,11 @@ if test "$ivshmem" = "yes" ; then
 fi
 if test "$debug_mutex" = "yes" ; then
   echo "CONFIG_DEBUG_MUTEX=y" >> $config_host_mak
+fi
+if test "$lib_cosim" = "yes" ; then
+    echo "CONFIG_LIBCOSIM=y" >> $config_host_mak
+    echo "LIBCOSIM_LIBS=$libcosim_libs" >> $config_host_mak
+    echo "LIBCOSIM_CFLAGS=$libcosim_cflags" >> $config_host_mak
 fi
 
 # Hold two types of flag:

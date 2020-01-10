@@ -42,6 +42,7 @@
 #include "sysemu/cpu-timers.h"
 #include "sysemu/replay.h"
 #include "internal.h"
+#include "qemu_cosim.h"
 
 /* -icount align implementation. */
 

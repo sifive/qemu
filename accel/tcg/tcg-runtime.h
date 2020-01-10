@@ -27,6 +27,9 @@ DEF_HELPER_FLAGS_1(ctpop_i64, TCG_CALL_NO_RWG_SE, i64, i64)
 DEF_HELPER_FLAGS_1(lookup_tb_ptr, TCG_CALL_NO_WG_SE, cptr, env)
 
 DEF_HELPER_FLAGS_1(exit_atomic, TCG_CALL_NO_WG, noreturn, env)
+DEF_HELPER_FLAGS_1(qemu_cosim_tb_start, TCG_CALL_NO_WG, void, env)
+DEF_HELPER_FLAGS_1(qemu_cosim_sync, TCG_CALL_NO_WG, void, env)
+DEF_HELPER_FLAGS_1(qemu_cosim_sync_endofblock, TCG_CALL_NO_WG, void, env)
 
 #ifndef IN_HELPER_PROTO
 /*

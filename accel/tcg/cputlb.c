@@ -42,6 +42,7 @@
 #ifdef CONFIG_PLUGIN
 #include "qemu/plugin-memory.h"
 #endif
+#include "qemu_cosim.h"
 
 /* DEBUG defines, enable DEBUG_TLB_LOG to log to the CPU_LOG_MMU target */
 /* #define DEBUG_TLB */
@@ -1369,6 +1370,10 @@ static uint64_t io_readx(CPUArchState *env, CPUIOTLBEntry *iotlbentry,
 
         cpu_transaction_failed(cpu, physaddr, addr, memop_size(op), access_type,
                                mmu_idx, iotlbentry->attrs, r, retaddr);
+    }
+    {
+        unsigned size = memop_size(op);
+        qemu_cosim_mmioload_record(mr_offset, size, &val);
     }
     if (locked) {
         qemu_mutex_unlock_iothread();

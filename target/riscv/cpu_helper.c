@@ -25,6 +25,7 @@
 #include "tcg/tcg-op.h"
 #include "trace.h"
 #include "semihosting/common-semi.h"
+#include "qemu_cosim.h"
 
 int riscv_cpu_mmu_index(CPURISCVState *env, bool ifetch)
 {
@@ -237,6 +238,8 @@ uint32_t riscv_cpu_update_mip(RISCVCPU *cpu, uint32_t mask, uint32_t value)
     }
 
     env->mip = (env->mip & ~mask) | (value & mask);
+
+    qemu_cosim_update_mip(env->mip);
 
     if (env->mip) {
         cpu_interrupt(cs, CPU_INTERRUPT_HARD);
@@ -918,6 +921,11 @@ void riscv_cpu_do_interrupt(CPUState *cs)
         }
         cause = RISCV_EXCP_BREAKPOINT;
     }
+
+    if (async)
+        qemu_cosim_enter_interrupt();
+    else
+        qemu_cosim_enter_exception();
 
     if (!async) {
         /* set tval to badaddr for traps with address information */

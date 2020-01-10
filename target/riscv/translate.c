@@ -139,6 +139,7 @@ static void exit_tb(DisasContext *ctx)
     if (ctx->base.singlestep_enabled) {
         gen_exception_debug();
     } else {
+        gen_helper_qemu_cosim_sync_endofblock(cpu_env);
         tcg_gen_exit_tb(NULL, 0);
     }
 }
@@ -149,6 +150,7 @@ static void lookup_and_goto_ptr(DisasContext *ctx)
     if (ctx->base.singlestep_enabled) {
         gen_exception_debug();
     } else {
+        gen_helper_qemu_cosim_sync_endofblock(cpu_env);
         tcg_gen_lookup_and_goto_ptr();
     }
 }
@@ -180,6 +182,7 @@ static void gen_goto_tb(DisasContext *ctx, int n, target_ulong dest)
 {
     if (use_goto_tb(ctx, dest)) {
         /* chaining is only allowed when the jump is to the same page */
+        gen_helper_qemu_cosim_sync_endofblock(cpu_env);
         tcg_gen_goto_tb(n);
         tcg_gen_movi_tl(cpu_pc, dest);
 
@@ -987,6 +990,8 @@ static void riscv_tr_init_disas_context(DisasContextBase *dcbase, CPUState *cs)
 
 static void riscv_tr_tb_start(DisasContextBase *db, CPUState *cpu)
 {
+    // gen helper function to check register
+    gen_helper_qemu_cosim_tb_start(cpu_env);
 }
 
 static void riscv_tr_insn_start(DisasContextBase *dcbase, CPUState *cpu)
@@ -994,6 +999,9 @@ static void riscv_tr_insn_start(DisasContextBase *dcbase, CPUState *cpu)
     DisasContext *ctx = container_of(dcbase, DisasContext, base);
 
     tcg_gen_insn_start(ctx->base.pc_next);
+
+    gen_helper_qemu_cosim_sync(cpu_env);
+    tcg_gen_movi_tl(cpu_pc, ctx->base.pc_next);
 }
 
 static bool riscv_tr_breakpoint_check(DisasContextBase *dcbase, CPUState *cpu,
@@ -1044,6 +1052,7 @@ static void riscv_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
     default:
         g_assert_not_reached();
     }
+    gen_helper_qemu_cosim_sync_endofblock(cpu_env);
 }
 
 static void riscv_tr_disas_log(const DisasContextBase *dcbase, CPUState *cpu)

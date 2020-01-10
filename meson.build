@@ -935,6 +935,12 @@ libdaxctl = not_found
 if 'CONFIG_LIBDAXCTL' in config_host
   libdaxctl = declare_dependency(link_args: config_host['LIBDAXCTL_LIBS'].split())
 endif
+libcosim = not_found
+if 'CONFIG_LIBCOSIM' in config_host
+  libcosim = declare_dependency(compile_args: config_host['LIBCOSIM_CFLAGS'].split(),
+                                link_args: config_host['LIBCOSIM_LIBS'].split(),
+                                static: true)
+endif
 tasn1 = not_found
 if 'CONFIG_TASN1' in config_host
   tasn1 = declare_dependency(compile_args: config_host['TASN1_CFLAGS'].split(),
@@ -2124,6 +2130,7 @@ common_ss.add(qom, qemuutil)
 
 common_ss.add_all(when: 'CONFIG_SOFTMMU', if_true: [softmmu_ss])
 common_ss.add_all(when: 'CONFIG_USER_ONLY', if_true: user_ss)
+common_ss.add(when: 'CONFIG_LIBCOSIM', if_true: libcosim)
 
 common_all = common_ss.apply(config_all, strict: false)
 common_all = static_library('common',
@@ -2715,6 +2722,7 @@ summary_info += {'libdaxctl support': config_host.has_key('CONFIG_LIBDAXCTL')}
 summary_info += {'libudev':           libudev.found()}
 summary_info += {'FUSE lseek':        fuse_lseek.found()}
 summary(summary_info, bool_yn: true, section: 'Dependencies')
+summary_info += {'libcosim':          config_host.has_key('CONFIG_LIBCOSIM')}
 
 if not supported_cpus.contains(cpu)
   message()

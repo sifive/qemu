@@ -43,6 +43,9 @@
 #include "hw/pci/pci.h"
 #include "hw/pci-host/gpex.h"
 #include "hw/display/ramfb.h"
+#include "qemu_cosim.h"
+
+#include <libfdt.h>
 
 static const MemMapEntry virt_memmap[] = {
     [VIRT_DEBUG] =       {        0x0,         0x100 },
@@ -685,6 +688,8 @@ static void virt_machine_init(MachineState *machine)
 
         kernel_entry = riscv_load_kernel(machine->kernel_filename,
                                          kernel_start_addr, NULL);
+
+        qemu_cosim_init(machine->kernel_filename);
 
         if (machine->initrd_filename) {
             hwaddr start;

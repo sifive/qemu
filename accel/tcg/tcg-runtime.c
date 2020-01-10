@@ -31,6 +31,7 @@
 #include "exec/log.h"
 #include "tcg/tcg.h"
 #include "exec/tb-lookup.h"
+#include "qemu_cosim.h"
 
 /* 32-bit helpers */
 
@@ -169,4 +170,19 @@ const void *HELPER(lookup_tb_ptr)(CPUArchState *env)
 void HELPER(exit_atomic)(CPUArchState *env)
 {
     cpu_loop_exit_atomic(env_cpu(env), GETPC());
+}
+
+void HELPER(qemu_cosim_tb_start)(CPUArchState *env)
+{
+    qemu_cosim_ignore_next();
+}
+
+void HELPER(qemu_cosim_sync)(CPUArchState *env)
+{
+    qemu_cosim_sync(ST_INSN_START);
+}
+
+void HELPER(qemu_cosim_sync_endofblock)(CPUArchState *env)
+{
+    qemu_cosim_sync(ST_END_OF_BLOCK);
 }
