@@ -64,3 +64,6 @@
 [submodule "roms/vbootrom"]
 	path = roms/vbootrom
 	url = https://gitlab.com/qemu-project/vbootrom.git
+[submodule "riscv-isa-sim"]
+	path = riscv-isa-sim
+	url = git@github.com:sifive/riscv-isa-sim.git
