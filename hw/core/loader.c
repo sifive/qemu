@@ -121,12 +121,13 @@ int load_image_targphys(const char *filename,
 }
 
 /* return the size or -1 if error */
-int load_image_targphys_as(const char *filename,
+size_t load_image_targphys_as(const char *filename,
                            hwaddr addr, uint64_t max_sz, AddressSpace *as)
 {
-    int size;
+    int64_t size;
 
     size = get_image_size(filename);
+    fprintf(stderr, "image size = %lx, max size = %lx\n", size, max_sz);
     if (size < 0 || size > max_sz) {
         return -1;
     }
@@ -945,7 +946,7 @@ int rom_add_file(const char *file, const char *fw_dir,
 {
     MachineClass *mc = MACHINE_GET_CLASS(qdev_get_machine());
     Rom *rom;
-    int rc, fd = -1;
+    size_t rc, fd = -1;
     char devpath[100];
 
     if (as && mr) {
@@ -985,12 +986,19 @@ int rom_add_file(const char *file, const char *fw_dir,
     rom->datasize = rom->romsize;
     rom->data     = g_malloc0(rom->datasize);
     lseek(fd, 0, SEEK_SET);
+#if 1
+    rc = 0;
+    do {
+    rc += read(fd, rom->data + rc, rom->datasize - rc);
+    } while (rc != rom->datasize);
+#else
     rc = read(fd, rom->data, rom->datasize);
     if (rc != rom->datasize) {
-        fprintf(stderr, "rom: file %-20s: read error: rc=%d (expected %zd)\n",
+        fprintf(stderr, "rom: file %-20s: read error: rc=%zd (expected %zd)\n",
                 rom->name, rc, rom->datasize);
         goto err;
     }
+#endif
     close(fd);
     rom_insert(rom);
     if (rom->fw_file && fw_cfg) {

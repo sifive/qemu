@@ -40,7 +40,7 @@ ssize_t load_image_size(const char *filename, void *addr, size_t size);
  *
  * Returns the size of the loaded image on success, -1 otherwise.
  */
-int load_image_targphys_as(const char *filename,
+size_t load_image_targphys_as(const char *filename,
                            hwaddr addr, uint64_t max_sz, AddressSpace *as);
 
 /**load_targphys_hex_as:
