@@ -4597,51 +4597,122 @@ GEN_VEXT_RED(vwredsumu_vs_h, uint32_t, uint16_t, H4, H2, DO_ADD)
 GEN_VEXT_RED(vwredsumu_vs_w, uint64_t, uint32_t, H8, H4, DO_ADD)
 
 /* Vector Single-Width Floating-Point Reduction Instructions */
-#define GEN_VEXT_FRED(NAME, TD, TS2, HD, HS2, OP)          \
-void HELPER(NAME)(void *vd, void *v0, void *vs1,           \
-                  void *vs2, CPURISCVState *env,           \
-                  uint32_t desc)                           \
-{                                                          \
-    uint32_t vm = vext_vm(desc);                           \
-    uint32_t vl = env->vl;                                 \
-    uint32_t i;                                            \
-    TD s1 =  *((TD *)vs1 + HD(0));                         \
-                                                           \
-    for (i = env->vstart; i < vl; i++) {                   \
-        TS2 s2 = *((TS2 *)vs2 + HS2(i));                   \
-        if (!vm && !vext_elem_mask(v0, i)) {               \
-            continue;                                      \
-        }                                                  \
-        s1 = OP(s1, (TD)s2, &env->fp_status);              \
-    }                                                      \
-    *((TD *)vd + HD(0)) = s1;                              \
-    env->vstart = 0;                                       \
+/*
+ * If f is NaN, return SEW-bit canonical NaN.
+ * Set the invalid exception flag if f is a sNaN.
+ */
+static uint64_t propagate_nan(uint64_t f, uint32_t sew, float_status *s)
+{
+    target_ulong ret;
+
+    switch (sew) {
+    case 16:
+        ret = fclass_h(f);
+        /* check if f is NaN */
+        if (ret & 0x300) {
+            /* check if f is a sNaN */
+            if (ret & 0x100) {
+                s->float_exception_flags |= float_flag_invalid;
+            }
+            /* return canonical NaN */
+            return float16_default_nan(s);
+        } else {
+            return f;
+        }
+        break;
+    case 32:
+        ret = fclass_s(f);
+        /* check if f is NaN */
+        if (ret & 0x300) {
+            /* check if f is a sNaN */
+            if (ret & 0x100) {
+                s->float_exception_flags |= float_flag_invalid;
+            }
+            /* return canonical NaN */
+            return float32_default_nan(s);
+        } else {
+            return f;
+        }
+        break;
+    case 64:
+        ret = fclass_d(f);
+        /* check if f is NaN */
+        if (ret & 0x300) {
+            /* check if f is a sNaN */
+            if (ret & 0x100) {
+                s->float_exception_flags |= float_flag_invalid;
+            }
+            /* return canonical NaN */
+            return float64_default_nan(s);
+        } else {
+            return f;
+        }
+        break;
+    default:
+        g_assert_not_reached();
+    }
 }
 
+#define GEN_VEXT_FRED(NAME, TD, TS2, HD, HS2, PROPAGATE_NAN, OP)    \
+void HELPER(NAME)(void *vd, void *v0, void *vs1,                    \
+                  void *vs2, CPURISCVState *env,                    \
+                  uint32_t desc)                                    \
+{                                                                   \
+    uint32_t vm = vext_vm(desc);                                    \
+    uint32_t vl = env->vl;                                          \
+    uint32_t i;                                                     \
+    bool active = false;                                            \
+    TD s1 = *((TD *)vs1 + HD(0));                                   \
+                                                                    \
+    for (i = env->vstart; i < vl; i++) {                            \
+        TS2 s2 = *((TS2 *)vs2 + HS2(i));                            \
+        if (!vm && !vext_elem_mask(v0, i)) {                        \
+            continue;                                               \
+        }                                                           \
+        active = true;                                              \
+        s1 = OP(s1, (TD)s2, &env->fp_status);                       \
+    }                                                               \
+                                                                    \
+    if (vl > 0) {                                                   \
+        if (PROPAGATE_NAN && !active) {                             \
+            *((TD *)vd + HD(0)) = propagate_nan(s1, sizeof(TD) * 8, \
+                                                &env->fp_status);   \
+        } else {                                                    \
+            *((TD *)vd + HD(0)) = s1;                               \
+        }                                                           \
+    }                                                               \
+    env->vstart = 0;                                                \
+}
+
+/* Ordered sum */
+GEN_VEXT_FRED(vfredosum_vs_h, uint16_t, uint16_t, H2, H2, false, float16_add)
+GEN_VEXT_FRED(vfredosum_vs_w, uint32_t, uint32_t, H4, H4, false, float32_add)
+GEN_VEXT_FRED(vfredosum_vs_d, uint64_t, uint64_t, H8, H8, false, float64_add)
+
 /* Unordered sum */
-GEN_VEXT_FRED(vfredsum_vs_h, uint16_t, uint16_t, H2, H2, float16_add)
-GEN_VEXT_FRED(vfredsum_vs_w, uint32_t, uint32_t, H4, H4, float32_add)
-GEN_VEXT_FRED(vfredsum_vs_d, uint64_t, uint64_t, H8, H8, float64_add)
+GEN_VEXT_FRED(vfredsum_vs_h, uint16_t, uint16_t, H2, H2, true, float16_add)
+GEN_VEXT_FRED(vfredsum_vs_w, uint32_t, uint32_t, H4, H4, true, float32_add)
+GEN_VEXT_FRED(vfredsum_vs_d, uint64_t, uint64_t, H8, H8, true, float64_add)
 
 /* Maximum value */
-GEN_VEXT_FRED(vfredmax_vs_h, uint16_t, uint16_t, H2, H2, float16_maxnum_noprop)
-GEN_VEXT_FRED(vfredmax_vs_w, uint32_t, uint32_t, H4, H4, float32_maxnum_noprop)
-GEN_VEXT_FRED(vfredmax_vs_d, uint64_t, uint64_t, H8, H8, float64_maxnum_noprop)
+GEN_VEXT_FRED(vfredmax_vs_h, uint16_t, uint16_t, H2, H2, false, float16_maxnum_noprop)
+GEN_VEXT_FRED(vfredmax_vs_w, uint32_t, uint32_t, H4, H4, false, float32_maxnum_noprop)
+GEN_VEXT_FRED(vfredmax_vs_d, uint64_t, uint64_t, H8, H8, false, float64_maxnum_noprop)
 
 /* Minimum value */
-GEN_VEXT_FRED(vfredmin_vs_h, uint16_t, uint16_t, H2, H2, float16_minnum_noprop)
-GEN_VEXT_FRED(vfredmin_vs_w, uint32_t, uint32_t, H4, H4, float32_minnum_noprop)
-GEN_VEXT_FRED(vfredmin_vs_d, uint64_t, uint64_t, H8, H8, float64_minnum_noprop)
+GEN_VEXT_FRED(vfredmin_vs_h, uint16_t, uint16_t, H2, H2, false, float16_minnum_noprop)
+GEN_VEXT_FRED(vfredmin_vs_w, uint32_t, uint32_t, H4, H4, false, float32_minnum_noprop)
+GEN_VEXT_FRED(vfredmin_vs_d, uint64_t, uint64_t, H8, H8, false, float64_minnum_noprop)
 
 /* Vector Widening Floating-Point Reduction Instructions */
-/* Unordered reduce 2*SEW = 2*SEW + sum(promote(SEW)) */
-void HELPER(vfwredsum_vs_h)(void *vd, void *v0, void *vs1,
-                            void *vs2, CPURISCVState *env, uint32_t desc)
+/* Ordered reduce 2*SEW = 2*SEW + sum(promote(SEW)) */
+void HELPER(vfwredosum_vs_h)(void *vd, void *v0, void *vs1,
+                             void *vs2, CPURISCVState *env, uint32_t desc)
 {
     uint32_t vm = vext_vm(desc);
     uint32_t vl = env->vl;
     uint32_t i;
-    uint32_t s1 =  *((uint32_t *)vs1 + H4(0));
+    uint32_t s1 = *((uint32_t *)vs1 + H4(0));
 
     for (i = env->vstart; i < vl; i++) {
         uint16_t s2 = *((uint16_t *)vs2 + H2(i));
@@ -4655,13 +4726,13 @@ void HELPER(vfwredsum_vs_h)(void *vd, void *v0, void *vs1,
     env->vstart = 0;
 }
 
-void HELPER(vfwredsum_vs_w)(void *vd, void *v0, void *vs1,
-                            void *vs2, CPURISCVState *env, uint32_t desc)
+void HELPER(vfwredosum_vs_w)(void *vd, void *v0, void *vs1,
+                             void *vs2, CPURISCVState *env, uint32_t desc)
 {
     uint32_t vm = vext_vm(desc);
     uint32_t vl = env->vl;
     uint32_t i;
-    uint64_t s1 =  *((uint64_t *)vs1);
+    uint64_t s1 = *((uint64_t *)vs1);
 
     for (i = env->vstart; i < vl; i++) {
         uint32_t s2 = *((uint32_t *)vs2 + H4(i));
@@ -4672,6 +4743,65 @@ void HELPER(vfwredsum_vs_w)(void *vd, void *v0, void *vs1,
                          &env->fp_status);
     }
     *((uint64_t *)vd) = s1;
+    env->vstart = 0;
+}
+
+/* Unordered reduce 2*SEW = 2*SEW + sum(promote(SEW)) */
+void HELPER(vfwredsum_vs_h)(void *vd, void *v0, void *vs1,
+                            void *vs2, CPURISCVState *env, uint32_t desc)
+{
+    uint32_t vm = vext_vm(desc);
+    uint32_t vl = env->vl;
+    uint32_t i;
+    uint32_t s1 =  *((uint32_t *)vs1 + H4(0));
+    bool active = false;
+
+    for (i = env->vstart; i < vl; i++) {
+        uint16_t s2 = *((uint16_t *)vs2 + H2(i));
+        if (!vm && !vext_elem_mask(v0, i)) {
+            continue;
+        }
+        active = true;
+        s1 = float32_add(s1, float16_to_float32(s2, true, &env->fp_status),
+                         &env->fp_status);
+    }
+
+    if (vl > 0) {
+        if (!active) {
+            *((uint32_t *)vd + H4(0)) = propagate_nan(s1, 32, &env->fp_status);
+        } else {
+            *((uint32_t *)vd + H4(0)) = s1;
+        }
+    }
+    env->vstart = 0;
+}
+
+void HELPER(vfwredsum_vs_w)(void *vd, void *v0, void *vs1,
+                            void *vs2, CPURISCVState *env, uint32_t desc)
+{
+    uint32_t vm = vext_vm(desc);
+    uint32_t vl = env->vl;
+    uint32_t i;
+    uint64_t s1 =  *((uint64_t *)vs1);
+    bool active = false;
+
+    for (i = env->vstart; i < vl; i++) {
+        uint32_t s2 = *((uint32_t *)vs2 + H4(i));
+        if (!vm && !vext_elem_mask(v0, i)) {
+            continue;
+        }
+        active = true;
+        s1 = float64_add(s1, float32_to_float64(s2, &env->fp_status),
+                         &env->fp_status);
+    }
+
+    if (vl > 0) {
+        if (!active) {
+            *((uint64_t *)vd) = propagate_nan(s1, 64, &env->fp_status);
+        } else {
+            *((uint64_t *)vd) = s1;
+        }
+    }
     env->vstart = 0;
 }
 
