@@ -214,6 +214,18 @@ static bool trans_grevi(DisasContext *ctx, arg_grevi *a)
     return gen_grevi(ctx, a);
 }
 
+static bool trans_shfl(DisasContext *ctx, arg_shfl *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return false;
+}
+
+static bool trans_unshfl(DisasContext *ctx, arg_unshfl *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return false;
+}
+
 static bool trans_gorc(DisasContext *ctx, arg_gorc *a)
 {
     REQUIRE_EXT(ctx, RVB);
