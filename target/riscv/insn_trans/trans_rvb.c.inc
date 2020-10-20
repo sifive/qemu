@@ -310,6 +310,32 @@ static bool trans_crc32c_w(DisasContext *ctx, arg_crc32c_w *a)
     return gen_crc32c(a, 32);
 }
 
+static bool trans_cmix(DisasContext *ctx, arg_cmix *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return false;
+}
+
+static bool trans_cmov(DisasContext *ctx, arg_cmov *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return false;
+}
+
+#if 0
+static bool trans_fsl(DisasContext *ctx, arg_fsl *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return false;
+}
+
+static bool trans_fsr(DisasContext *ctx, arg_fsr *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return false;
+}
+#endif
+
 #define GEN_TRANS_SHADD(SHAMT)                                             \
 static bool trans_sh##SHAMT##add(DisasContext *ctx, arg_sh##SHAMT##add *a) \
 {                                                                          \
