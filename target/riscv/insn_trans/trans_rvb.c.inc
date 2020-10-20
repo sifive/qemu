@@ -274,6 +274,42 @@ static bool trans_bdecompress(DisasContext *ctx, arg_bdecompress *a)
     return gen_arith(ctx, a, &gen_helper_bdecompress);
 }
 
+static bool trans_crc32_b(DisasContext *ctx, arg_crc32_b *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_crc32(a, 8);
+}
+
+static bool trans_crc32_h(DisasContext *ctx, arg_crc32_h *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_crc32(a, 16);
+}
+
+static bool trans_crc32_w(DisasContext *ctx, arg_crc32_w *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_crc32(a, 32);
+}
+
+static bool trans_crc32c_b(DisasContext *ctx, arg_crc32c_b *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_crc32c(a, 8);
+}
+
+static bool trans_crc32c_h(DisasContext *ctx, arg_crc32c_h *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_crc32c(a, 16);
+}
+
+static bool trans_crc32c_w(DisasContext *ctx, arg_crc32c_w *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_crc32c(a, 32);
+}
+
 #define GEN_TRANS_SHADD(SHAMT)                                             \
 static bool trans_sh##SHAMT##add(DisasContext *ctx, arg_sh##SHAMT##add *a) \
 {                                                                          \
@@ -442,6 +478,18 @@ static bool trans_clmulrw(DisasContext *ctx, arg_clmulrw *a)
 {
     REQUIRE_EXT(ctx, RVB);
     return gen_arith(ctx, a, gen_clmulrw);
+}
+
+static bool trans_crc32_d(DisasContext *ctx, arg_crc32_d *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_crc32(a, 64);
+}
+
+static bool trans_crc32c_d(DisasContext *ctx, arg_crc32c_d *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_crc32c(a, 64);
 }
 
 #define GEN_TRANS_SHADD_UW(SHAMT)                             \

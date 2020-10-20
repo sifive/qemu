@@ -640,6 +640,42 @@ static bool gen_grevi(DisasContext *ctx, arg_grevi *a)
     return true;
 }
 
+static bool gen_crc32(arg_r2 *a, target_long nbits)
+{
+    TCGv source, nbitsv;
+    source = tcg_temp_new();
+    nbitsv = tcg_temp_new();
+
+    gen_get_gpr(source, a->rs1);
+
+    tcg_gen_movi_tl(nbitsv, nbits);
+    gen_helper_crc32(source, source, nbitsv);
+
+    gen_set_gpr(a->rd, source);
+
+    tcg_temp_free(source);
+    tcg_temp_free(nbitsv);
+    return true;
+}
+
+static bool gen_crc32c(arg_r2 *a, target_long nbits)
+{
+    TCGv source, nbitsv;
+    source = tcg_temp_new();
+    nbitsv = tcg_temp_new();
+
+    gen_get_gpr(source, a->rs1);
+
+    tcg_gen_movi_tl(nbitsv, nbits);
+    gen_helper_crc32c(source, source, nbitsv);
+
+    gen_set_gpr(a->rd, source);
+
+    tcg_temp_free(source);
+    tcg_temp_free(nbitsv);
+    return true;
+}
+
 #define GEN_SHADD(SHAMT)                                       \
 static void gen_sh##SHAMT##add(TCGv ret, TCGv arg1, TCGv arg2) \
 {                                                              \

@@ -228,3 +228,17 @@ target_ulong HELPER(clmulrw)(target_ulong rs1, target_ulong rs2)
 }
 
 #endif
+
+target_ulong HELPER(crc32)(target_ulong x, target_ulong nbits)
+{
+    for (int i = 0; i < nbits; i++)
+        x = (x >> 1) ^ (0xEDB88320 & ~((x & 1) - 1));
+    return x;
+}
+
+target_ulong HELPER(crc32c)(target_ulong x, target_ulong nbits)
+{
+    for (int i = 0; i < nbits; i++)
+        x = (x >> 1) ^ (0x82F63B78 & ~((x & 1) - 1));
+    return x;
+}
