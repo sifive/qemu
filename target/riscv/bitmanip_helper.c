@@ -122,6 +122,30 @@ target_ulong HELPER(bfp)(target_ulong rs1, target_ulong rs2)
     return (data & mask) | (rs1 & ~mask);
 }
 
+target_ulong HELPER(bcompress)(target_ulong rs1, target_ulong rs2)
+{
+    target_ulong c = 0, i = 0, data = rs1, mask = rs2;
+    while (mask) {
+        target_ulong b = mask & ~((mask | (mask - 1)) + 1);
+        c |= (data & b) >> (ctzl(b) - i);
+        i += ctpopl(b);
+        mask -= b;
+    }
+    return c;
+}
+
+target_ulong HELPER(bdecompress)(target_ulong rs1, target_ulong rs2)
+{
+    target_ulong c = 0, i = 0, data = rs1, mask = rs2;
+    while (mask) {
+        target_ulong b = mask & ~((mask | (mask - 1)) + 1);
+        c |= (data << (ctzl(b) - i)) & b;
+        i += ctpopl(b);
+        mask -= b;
+    }
+    return c;
+}
+
 static target_ulong do_clmul(target_long rs1,
                              target_ulong rs2,
                              int bits)

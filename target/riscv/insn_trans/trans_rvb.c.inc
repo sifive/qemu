@@ -262,6 +262,18 @@ static bool trans_bfp(DisasContext *ctx, arg_bfp *a)
     return gen_arith(ctx, a, &gen_helper_bfp);
 }
 
+static bool trans_bcompress(DisasContext *ctx, arg_bcompress *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_arith(ctx, a, &gen_helper_bcompress);
+}
+
+static bool trans_bdecompress(DisasContext *ctx, arg_bdecompress *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_arith(ctx, a, &gen_helper_bdecompress);
+}
+
 #define GEN_TRANS_SHADD(SHAMT)                                             \
 static bool trans_sh##SHAMT##add(DisasContext *ctx, arg_sh##SHAMT##add *a) \
 {                                                                          \
