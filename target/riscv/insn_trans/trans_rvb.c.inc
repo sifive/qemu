@@ -256,6 +256,12 @@ static bool trans_clmulr(DisasContext *ctx, arg_clmulr *a)
     return gen_arith(ctx, a, gen_helper_clmulr);
 }
 
+static bool trans_bfp(DisasContext *ctx, arg_bfp *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_arith(ctx, a, &gen_helper_bfp);
+}
+
 #define GEN_TRANS_SHADD(SHAMT)                                             \
 static bool trans_sh##SHAMT##add(DisasContext *ctx, arg_sh##SHAMT##add *a) \
 {                                                                          \

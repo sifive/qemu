@@ -101,6 +101,27 @@ target_ulong HELPER(gorcw)(target_ulong rs1, target_ulong rs2)
 
 #endif
 
+static target_ulong slo(target_ulong rs1, target_ulong rs2)
+{
+    int shamt = rs2 & (TARGET_LONG_BITS - 1);
+    return ~((~rs1) << shamt);
+}
+
+target_ulong HELPER(bfp)(target_ulong rs1, target_ulong rs2)
+{
+    target_ulong cfg = rs2 >> (TARGET_LONG_BITS / 2);
+
+    if ((cfg >> 30) == 2)
+        cfg = cfg >> 16;
+
+    int len = (cfg >> 8) & ((TARGET_LONG_BITS / 2)  - 1);
+    int off = cfg & (TARGET_LONG_BITS - 1);
+    len = len ? len : (TARGET_LONG_BITS / 2);
+    target_ulong mask = slo(0, len) << off;
+    target_ulong data = rs2 << off;
+    return (data & mask) | (rs1 & ~mask);
+}
+
 static target_ulong do_clmul(target_long rs1,
                              target_ulong rs2,
                              int bits)
