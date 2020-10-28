@@ -1644,5 +1644,11 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
     [CSR_MHPMCOUNTER29H] = { "mhpmcounter29h", any32,  read_zero },
     [CSR_MHPMCOUNTER30H] = { "mhpmcounter30h", any32,  read_zero },
     [CSR_MHPMCOUNTER31H] = { "mhpmcounter31h", any32,  read_zero },
+
+    /* SiFive Dummy Registers */
+    [CSR_SIFIVE_BPM]      = { "sifive_bpm",      any, read_zero },
+    [CSR_SIFIVE_CHICKEN]  = { "sifive_chicken",  any, read_zero },
+    [CSR_SIFIVE_CHICKEN2] = { "sifive_chicken2", any, read_zero },
+    [CSR_SIFIVE_HWPF] =     { "sifive_hwpf",     any, read_zero },
 #endif /* !CONFIG_USER_ONLY */
 };

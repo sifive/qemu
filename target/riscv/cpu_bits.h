@@ -265,6 +265,12 @@
 #define CSR_DPC             0x7b1
 #define CSR_DSCRATCH        0x7b2
 
+/* Sifive Dummy Registers */
+#define CSR_SIFIVE_BPM      0x7c0
+#define CSR_SIFIVE_CHICKEN  0x7c1
+#define CSR_SIFIVE_CHICKEN2 0x7c2
+#define CSR_SIFIVE_HWPF     0x7c3
+
 /* Performance Counters */
 #define CSR_MHPMCOUNTER3    0xb03
 #define CSR_MHPMCOUNTER4    0xb04
