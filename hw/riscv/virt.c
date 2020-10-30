@@ -43,6 +43,7 @@
 #include "hw/pci/pci.h"
 #include "hw/pci-host/gpex.h"
 #include "hw/display/ramfb.h"
+#include "hw/misc/unimp.h"
 #include "qemu_cosim.h"
 
 #include <libfdt.h>
@@ -53,6 +54,7 @@ static const MemMapEntry virt_memmap[] = {
     [VIRT_TEST] =        {   0x100000,        0x1000 },
     [VIRT_RTC] =         {   0x101000,        0x1000 },
     [VIRT_CLINT] =       {  0x2000000,       0x10000 },
+    [VIRT_L2CC] =        {  0x2010000,     0x1000 },
     [VIRT_PCIE_PIO] =    {  0x3000000,       0x10000 },
     [VIRT_PLIC] =        {  0xc000000, VIRT_PLIC_SIZE(VIRT_CPUS_MAX * 2) },
     [VIRT_UART0] =       { 0x10000000,         0x100 },
@@ -775,6 +777,9 @@ static void virt_machine_init(MachineState *machine)
                                   drive_get(IF_PFLASH, 0, i));
     }
     virt_flash_map(s, system_memory);
+
+    create_unimplemented_device("riscv.sifive.u.l2cc",
+        memmap[VIRT_L2CC].base, memmap[VIRT_L2CC].size);
 }
 
 static void virt_machine_instance_init(Object *obj)

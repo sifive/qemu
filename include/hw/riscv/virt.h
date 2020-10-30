@@ -51,6 +51,7 @@ enum {
     VIRT_TEST,
     VIRT_RTC,
     VIRT_CLINT,
+    VIRT_L2CC,
     VIRT_PLIC,
     VIRT_UART0,
     VIRT_VIRTIO,
