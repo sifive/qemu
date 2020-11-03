@@ -63,16 +63,22 @@ static int qemu_cosim_mmioload_replay(uint64_t addr, size_t len, uint8_t *bytes)
         mmio_load_consume = (mmio_load_consume + 1) % MMIO_MAX_LOAD;
         return 1;
     }
+#ifdef DEBUG_MMIO
     qemu_log("consume %d, produce %d\n", mmio_load_consume, mmio_load_produce);
     qemu_log("mmio load %lx, len %ld\n", addr, len);
+#endif
     return 0;
 }
 
 static void atexit_dump(void);
-void qemu_cosim_init(const char *elffile)
+void qemu_cosim_init(const char *elffile, int is_bin, void *dtb, int dtb_sz)
 {
-    //cosim_handle = cosim_init(elffile, 1, qemu_cosim_mmioload_replay);
-    cosim_handle = cosim_init(elffile, 0, qemu_cosim_mmioload_replay);
+    if (is_bin == 0) {
+        //cosim_handle = cosim_init(elffile, 1, qemu_cosim_mmioload_replay);
+        cosim_handle = cosim_init(elffile, 0, qemu_cosim_mmioload_replay, is_bin, dtb, dtb_sz);
+    } else {
+        cosim_handle = cosim_init(elffile, 0, qemu_cosim_mmioload_replay, is_bin, dtb, dtb_sz);
+    }
     atexit(atexit_dump);
 }
 
@@ -105,6 +111,10 @@ static void dump_reg(const CPURISCVState *qemu_env, const struct RVRegFile *cosi
     qemu_log("sbadaddr= %lx, %lx\n", qemu_env->sbadaddr, cosim_env->stval);
     for (int i = 0; i < 32; i++)
         qemu_log("gp[%d] = %lx, %lx\n", i, qemu_env->gpr[i], cosim_env->gpr[i]);
+#ifdef CFG_CMP_FPR
+    for (int i = 0; i < 32; i++)
+        qemu_log("fp[%d] = %lx, %lx\n", i, qemu_env->fpr[i], cosim_env->fprv0[i]);
+#endif
 }
 
 void dump_qemu_reg(const CPURISCVState *env)
@@ -188,6 +198,15 @@ static void cmp_queue(void)
 #ifdef DEBUG
     if (debug_counter > DEBUG_COUNTER) {
         qemu_log("cmp qemu pc = %lx, cosim pc = %lx\n", env->pc, regfile->pc);
+    }
+#endif
+
+#ifdef CFG_CMP_FPR
+    for (int i = 0; i < 32; i++) {
+        if (env->fpr[i] != regfile->fprv0[i]) {
+            qemu_log("diff: fpr[%d] %lx vs %lx %lx\n", i, env->fpr[i], regfile->fprv0[i], regfile->fprv1[i]);
+            error = 1;
+        }
     }
 #endif
 

@@ -689,7 +689,7 @@ static void virt_machine_init(MachineState *machine)
         kernel_entry = riscv_load_kernel(machine->kernel_filename,
                                          kernel_start_addr, NULL);
 
-        qemu_cosim_init(machine->kernel_filename);
+        qemu_cosim_init(machine->kernel_filename, 0, machine->fdt, fdt_totalsize(machine->fdt));
 
         if (machine->initrd_filename) {
             hwaddr start;
@@ -707,6 +707,11 @@ static void virt_machine_init(MachineState *machine)
         * if kernel argument is not set.
         */
         kernel_entry = 0;
+
+        char *firmware_filename = riscv_find_firmware(machine->firmware);
+        if (firmware_filename) {
+            qemu_cosim_init(firmware_filename, 1, machine->fdt, fdt_totalsize(machine->fdt));
+        }
     }
 
     if (drive_get(IF_PFLASH, 0, 0)) {
@@ -723,6 +728,8 @@ static void virt_machine_init(MachineState *machine)
      */
     s->fw_cfg = create_fw_cfg(machine);
     rom_set_fw(s->fw_cfg);
+
+    fdt_pack(machine->fdt);
 
     /* Compute the fdt load address in dram */
     fdt_load_addr = riscv_load_fdt(memmap[VIRT_DRAM].base,
