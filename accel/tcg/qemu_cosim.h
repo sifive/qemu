@@ -22,7 +22,8 @@ enum stage_t {
 const char *stage_str(enum stage_t stage);
 
 void qemu_cosim_assert(void);
-void qemu_cosim_init(const char *elffile, int is_bin, void *dtb, int dtb_sz);
+void qemu_cosim_init(const char *elffile, int is_bin, void *dtb, int dtb_sz,
+                     uint32_t fdt_load_addr);
 void qemu_cosim_step(enum stage_t stage);
 void qemu_cosim_cmp(void);
 void qemu_cosim_ignore_next(void);

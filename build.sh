@@ -23,7 +23,8 @@ build_qemu()
     name=build
     mkdir -p $name &&
     cd $name &&
-    ../configure --target-list=riscv64-softmmu --lib-cosim=$cosim_lib &&
+    ../configure --target-list=riscv64-softmmu --lib-cosim=$cosim_lib \
+        --enable-debug --disable-strip --disable-debug-tcg --disable-slirp &&
     make -j16
     )
 }

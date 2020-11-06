@@ -71,13 +71,16 @@ static int qemu_cosim_mmioload_replay(uint64_t addr, size_t len, uint8_t *bytes)
 }
 
 static void atexit_dump(void);
-void qemu_cosim_init(const char *elffile, int is_bin, void *dtb, int dtb_sz)
+void qemu_cosim_init(const char *elffile, int is_bin, void *dtb, int dtb_sz,
+                     uint32_t fdt_load_addr)
 {
     if (is_bin == 0) {
         //cosim_handle = cosim_init(elffile, 1, qemu_cosim_mmioload_replay);
-        cosim_handle = cosim_init(elffile, 0, qemu_cosim_mmioload_replay, is_bin, dtb, dtb_sz);
+        cosim_handle = cosim_init(elffile, 0, qemu_cosim_mmioload_replay, is_bin, dtb, dtb_sz,
+                                  fdt_load_addr);
     } else {
-        cosim_handle = cosim_init(elffile, 0, qemu_cosim_mmioload_replay, is_bin, dtb, dtb_sz);
+        cosim_handle = cosim_init(elffile, 0, qemu_cosim_mmioload_replay, is_bin, dtb, dtb_sz,
+                                  fdt_load_addr);
     }
     atexit(atexit_dump);
 }

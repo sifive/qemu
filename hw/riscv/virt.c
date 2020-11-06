@@ -684,6 +684,19 @@ static void virt_machine_init(MachineState *machine)
                                     start_addr, NULL);
     }
 
+    /*
+     * Init fw_cfg.  Must be done before riscv_load_fdt, otherwise the device
+     * tree cannot be altered and we get FDT_ERR_NOSPACE.
+     */
+    s->fw_cfg = create_fw_cfg(machine);
+    rom_set_fw(s->fw_cfg);
+
+    fdt_pack(machine->fdt);
+
+    /* Compute the fdt load address in dram */
+    fdt_load_addr = riscv_load_fdt(memmap[VIRT_DRAM].base,
+                                   machine->ram_size, machine->fdt);
+
     if (machine->kernel_filename) {
         kernel_start_addr = riscv_calc_kernel_start_addr(&s->soc[0],
                                                          firmware_end_addr);
@@ -691,7 +704,8 @@ static void virt_machine_init(MachineState *machine)
         kernel_entry = riscv_load_kernel(machine->kernel_filename,
                                          kernel_start_addr, NULL);
 
-        qemu_cosim_init(machine->kernel_filename, 0, machine->fdt, fdt_totalsize(machine->fdt));
+        qemu_cosim_init(machine->kernel_filename, 0, machine->fdt, fdt_totalsize(machine->fdt),
+                        fdt_load_addr);
 
         if (machine->initrd_filename) {
             hwaddr start;
@@ -712,7 +726,8 @@ static void virt_machine_init(MachineState *machine)
 
         char *firmware_filename = riscv_find_firmware(machine->firmware);
         if (firmware_filename) {
-            qemu_cosim_init(firmware_filename, 1, machine->fdt, fdt_totalsize(machine->fdt));
+            qemu_cosim_init(firmware_filename, 1, machine->fdt, fdt_totalsize(machine->fdt),
+                            fdt_load_addr);
         }
     }
 
@@ -724,18 +739,6 @@ static void virt_machine_init(MachineState *machine)
         start_addr = virt_memmap[VIRT_FLASH].base;
     }
 
-    /*
-     * Init fw_cfg.  Must be done before riscv_load_fdt, otherwise the device
-     * tree cannot be altered and we get FDT_ERR_NOSPACE.
-     */
-    s->fw_cfg = create_fw_cfg(machine);
-    rom_set_fw(s->fw_cfg);
-
-    fdt_pack(machine->fdt);
-
-    /* Compute the fdt load address in dram */
-    fdt_load_addr = riscv_load_fdt(memmap[VIRT_DRAM].base,
-                                   machine->ram_size, machine->fdt);
     /* load the reset vector */
     riscv_setup_rom_reset_vec(machine, &s->soc[0], start_addr,
                               virt_memmap[VIRT_MROM].base,
