@@ -518,10 +518,12 @@ static int write_mstatus(CPURISCVState *env, int csrno, target_ulong val)
     uint64_t mstatus = env->mstatus;
     uint64_t mask = 0;
     int dirty;
+    bool has_page = riscv_feature(env, RISCV_FEATURE_MMU) &&
+                    riscv_has_ext(env, RVS);
 
     /* flush tlb on mstatus fields that affect VM */
-    if ((val ^ mstatus) & (MSTATUS_MXR | MSTATUS_MPP | MSTATUS_MPV |
-            MSTATUS_MPRV | MSTATUS_SUM)) {
+    if ((val ^ mstatus) & (MSTATUS_MPP | MSTATUS_MPV | MSTATUS_MPRV |
+            (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0))) {
         tlb_flush(env_cpu(env));
     }
     mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE |
