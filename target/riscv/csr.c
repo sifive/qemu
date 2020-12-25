@@ -525,9 +525,10 @@ static int write_mstatus(CPURISCVState *env, int csrno, target_ulong val)
         tlb_flush(env_cpu(env));
     }
     mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE |
-        MSTATUS_SPP | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_SUM |
-        MSTATUS_MPP | MSTATUS_MXR | MSTATUS_TVM | MSTATUS_TSR |
+        MSTATUS_SPP | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_MPP |
         MSTATUS_TW | MSTATUS_VS;
+    mask |= riscv_has_ext(env, RVS) ?
+        (MSTATUS_MXR | MSTATUS_SUM | MSTATUS_TVM | MSTATUS_TSR) : 0;
 
     if (!riscv_cpu_is_32bit(env)) {
         /*
