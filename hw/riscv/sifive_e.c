@@ -47,6 +47,7 @@
 #include "hw/misc/sifive_e_prci.h"
 #include "hw/misc/sifive_beu.h"
 #include "hw/misc/sifive_err_dev.h"
+#include "hw/misc/sifive_test.h"
 #include "chardev/char.h"
 #include "sysemu/arch_init.h"
 #include "sysemu/sysemu.h"
@@ -57,6 +58,7 @@ static MemMapEntry sifive_e_memmap[] = {
     [SIFIVE_E_DEV_MROM] =     {     0x1000,     0x2000 },
     [SIFIVE_E_DEV_ERR_DEV] =  {     0x3000,     0x1000 },
     [SIFIVE_E_DEV_OTP] =      {    0x20000,     0x2000 },
+    [SIFIVE_E_DEV_TEST] =     {   0x100000,     0x1000 },
     [SIFIVE_E_DEV_CLINT] =    {  0x2000000,    0x10000 },
     [SIFIVE_E_DEV_BEU] =      {  0x4000000,     0x1000 },
     [SIFIVE_E_DEV_PLIC] =     {  0xc000000,  0x4000000 },
@@ -118,6 +120,9 @@ static void sifive_e_machine_init(MachineState *machine)
         riscv_load_kernel(machine->kernel_filename,
                           memmap[SIFIVE_E_DEV_DTIM].base, NULL);
     }
+
+    /* SiFive Test MMIO device */
+    sifive_test_create(memmap[SIFIVE_E_DEV_TEST].base);
 }
 
 static bool sifive_e_machine_get_revb(Object *obj, Error **errp)
