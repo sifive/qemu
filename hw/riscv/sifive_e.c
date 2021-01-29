@@ -45,6 +45,7 @@
 #include "hw/intc/sifive_clint.h"
 #include "hw/intc/sifive_plic.h"
 #include "hw/misc/sifive_e_prci.h"
+#include "hw/misc/sifive_beu.h"
 #include "chardev/char.h"
 #include "sysemu/arch_init.h"
 #include "sysemu/sysemu.h"
@@ -55,6 +56,7 @@ static MemMapEntry sifive_e_memmap[] = {
     [SIFIVE_E_DEV_MROM] =     {     0x1000,     0x2000 },
     [SIFIVE_E_DEV_OTP] =      {    0x20000,     0x2000 },
     [SIFIVE_E_DEV_CLINT] =    {  0x2000000,    0x10000 },
+    [SIFIVE_E_DEV_BEU] =      {  0x4000000,     0x1000 },
     [SIFIVE_E_DEV_PLIC] =     {  0xc000000,  0x4000000 },
     [SIFIVE_E_DEV_AON] =      { 0x10000000,     0x8000 },
     [SIFIVE_E_DEV_PRCI] =     { 0x10008000,     0x8000 },
@@ -263,6 +265,12 @@ static void sifive_e_soc_realize(DeviceState *dev, Error **errp)
                            memmap[SIFIVE_E_DEV_XIP].size, &error_fatal);
     memory_region_add_subregion(sys_mem, memmap[SIFIVE_E_DEV_XIP].base,
         &s->xip_mem);
+
+    /* Bus error unit */
+    sifive_beu_create(memmap[SIFIVE_E_DEV_BEU].base,
+                      memmap[SIFIVE_E_DEV_BEU].size,
+                      NULL,
+                      BEU_IRQ_RNMI, 0);
 }
 
 static void sifive_e_soc_class_init(ObjectClass *oc, void *data)
