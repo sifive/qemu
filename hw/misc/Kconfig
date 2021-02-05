@@ -189,6 +189,9 @@ config SIFIVE_L2PF
 config SIFIVE_BEU
     bool
 
+config SIFIVE_ERR_DEV
+    bool
+
 config VIRT_CTRL
     bool
 

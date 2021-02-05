@@ -38,6 +38,7 @@ softmmu_ss.add(when: 'CONFIG_SIFIVE_U_PRCI', if_true: files('sifive_u_prci.c'))
 softmmu_ss.add(when: 'CONFIG_SIFIVE_REMAPPER', if_true: files('sifive_remapper.c'))
 softmmu_ss.add(when: 'CONFIG_SIFIVE_L2PF', if_true: files('sifive_l2pf.c'))
 specific_ss.add(when: 'CONFIG_SIFIVE_BEU', if_true: files('sifive_beu.c'))
+softmmu_ss.add(when: 'CONFIG_SIFIVE_ERR_DEV', if_true: files('sifive_err_dev.c'))
 
 # PKUnity SoC devices
 softmmu_ss.add(when: 'CONFIG_PUV3', if_true: files('puv3_pm.c'))
