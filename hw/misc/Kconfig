@@ -189,4 +189,7 @@ config VIRT_CTRL
 config SIFIVE_BEU
     bool
 
+config SIFIVE_ERR_DEV
+    bool
+
 source macio/Kconfig
