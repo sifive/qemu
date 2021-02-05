@@ -55,6 +55,7 @@ typedef struct SiFiveEState {
 enum {
     SIFIVE_E_DEV_DEBUG,
     SIFIVE_E_DEV_MROM,
+    SIFIVE_E_DEV_ERR_DEV,
     SIFIVE_E_DEV_OTP,
     SIFIVE_E_DEV_CLINT,
     SIFIVE_E_DEV_BEU,
