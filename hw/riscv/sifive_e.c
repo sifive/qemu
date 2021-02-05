@@ -269,14 +269,20 @@ static void sifive_e_soc_realize(DeviceState *dev, Error **errp)
         &s->xip_mem);
 
     /* Bus error unit */
-    sifive_beu_create(memmap[SIFIVE_E_DEV_BEU].base,
-                      memmap[SIFIVE_E_DEV_BEU].size,
-                      NULL,
-                      BEU_IRQ_RNMI, 0);
+    DeviceState *beu = sifive_beu_create(memmap[SIFIVE_E_DEV_BEU].base,
+                                         memmap[SIFIVE_E_DEV_BEU].size,
+                                         NULL,
+                                         BEU_IRQ_RNMI, 0);
 
     /* Error Device */
-    sifive_err_dev_create(memmap[SIFIVE_E_DEV_ERR_DEV].base,
-                          memmap[SIFIVE_E_DEV_ERR_DEV].size);
+    DeviceState *err_dev = sifive_err_dev_create(
+            memmap[SIFIVE_E_DEV_ERR_DEV].base,
+            memmap[SIFIVE_E_DEV_ERR_DEV].size);
+
+    /* Connect Error Device GPIO out to Bus error unit */
+    sysbus_connect_irq(SYS_BUS_DEVICE(err_dev), 0,
+                       qdev_get_gpio_in(beu,
+                           SIFIVE_BEU_INST_UNCORRECTABLE_ERROR));
 }
 
 static void sifive_e_soc_class_init(ObjectClass *oc, void *data)
