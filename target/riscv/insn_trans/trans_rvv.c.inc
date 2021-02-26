@@ -159,6 +159,29 @@ static bool do_vsetvl(DisasContext *ctx, int rd, int rs1, TCGv s2)
     return true;
 }
 
+static bool do_vsetivli(DisasContext *ctx, int rd, TCGv s1, TCGv s2)
+{
+    TCGv dst;
+
+    if (!require_rvv(ctx) || !has_ext(ctx, RVV)) {
+        return false;
+    }
+
+    dst = tcg_temp_new();
+
+    gen_helper_vsetvl(dst, cpu_env, s1, s2);
+    gen_set_gpr(rd, dst);
+    mark_vs_dirty(ctx);
+    tcg_gen_movi_tl(cpu_pc, ctx->pc_succ_insn);
+    lookup_and_goto_ptr(ctx);
+    ctx->base.is_jmp = DISAS_NORETURN;
+
+    tcg_temp_free(s1);
+    tcg_temp_free(s2);
+    tcg_temp_free(dst);
+    return true;
+}
+
 static bool trans_vsetvl(DisasContext *ctx, arg_vsetvl *a)
 {
     TCGv s2 = tcg_temp_new();
@@ -170,6 +193,13 @@ static bool trans_vsetvli(DisasContext *ctx, arg_vsetvli *a)
 {
     TCGv s2 = tcg_const_tl(a->zimm);
     return do_vsetvl(ctx, a->rd, a->rs1, s2);
+}
+
+static bool trans_vsetivli(DisasContext *ctx, arg_vsetivli *a)
+{
+    TCGv s1 = tcg_const_tl(a->rs1);
+    TCGv s2 = tcg_const_tl(a->zimm);
+    return do_vsetivli(ctx, a->rd, s1, s2);
 }
 
 /* vector register offset from env */
