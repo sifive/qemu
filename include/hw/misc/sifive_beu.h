@@ -44,6 +44,7 @@
 typedef enum SiFiveBusErrorUnitIRQMode {
     BEU_IRQ_PLATFORM,
     BEU_IRQ_LOCAL,
+    BEU_IRQ_RNMI,
 } SiFiveBusErrorUnitIRQMode;
 
 typedef struct SiFiveBusErrorUnitState SiFiveBusErrorUnitState;
@@ -59,6 +60,7 @@ struct SiFiveBusErrorUnitState {
     uint32_t mmio_size;
 
     qemu_irq irq;
+    qemu_irq rnmi;
     SiFiveBusErrorUnitIRQMode irq_mode;
     uint32_t hartid;
 

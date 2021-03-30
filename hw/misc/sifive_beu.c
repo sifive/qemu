@@ -95,6 +95,10 @@ static void sifive_beu_write(void *opaque, hwaddr addr,
                 env->bus_errorp = false;
                 cpu_reset_interrupt(cpu, CPU_INTERRUPT_BUS_ERROR);
                 break;
+            case BEU_IRQ_RNMI:
+                /* RNMI */
+                qemu_set_irq(s->rnmi, 0);
+                break;
             default:
                 g_assert_not_reached();
             }
@@ -164,6 +168,10 @@ static void bus_error_handler(void *opaque, int n, int level)
             env->bus_errorp = true;
             cpu_interrupt(cpu, CPU_INTERRUPT_BUS_ERROR);
         }
+        break;
+    case BEU_IRQ_RNMI:
+        /* RNMI */
+        qemu_set_irq(s->rnmi, 1);
         break;
     default:
         g_assert_not_reached();
