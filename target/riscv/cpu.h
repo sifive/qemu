@@ -82,7 +82,8 @@ enum {
     RISCV_FEATURE_MMU,
     RISCV_FEATURE_PMP,
     RISCV_FEATURE_MISA,
-    RISCV_FEATURE_RNMI
+    RISCV_FEATURE_RNMI,
+    RISCV_FEATURE_BEU
 };
 
 #define PRIV_VERSION_1_10_0 0x00011000
@@ -239,6 +240,10 @@ struct CPURISCVState {
     target_ulong sscratch;
     target_ulong mscratch;
 
+    /* Bus error unit */
+    bool bus_errore; /* false if cpu is in beu interrupt handler */
+    bool bus_errorp;
+
     /* temporary htif regs */
     uint64_t mfromhost;
     uint64_t mtohost;
@@ -323,11 +328,14 @@ struct RISCVCPU {
         uint16_t elen;
         bool mmu;
         bool pmp;
+        bool beu;
         uint64_t resetvec;
         bool rnmi;
         uint64_t rnmi_irqvec;
         uint64_t rnmi_excpvec;
     } cfg;
+
+    Object *buserror;
 };
 
 static inline int riscv_has_ext(CPURISCVState *env, target_ulong ext)

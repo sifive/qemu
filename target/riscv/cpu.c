@@ -29,6 +29,7 @@
 #include "hw/qdev-properties.h"
 #include "migration/vmstate.h"
 #include "fpu/softfloat-helpers.h"
+#include "hw/misc/beu.h"
 
 /* RISC-V CPU definitions */
 
@@ -557,6 +558,13 @@ static void riscv_cpu_realize(DeviceState *dev, Error **errp)
         set_misa(env, target_misa);
     }
 
+    if (cpu->cfg.beu) {
+        set_feature(env, RISCV_FEATURE_BEU);
+#ifndef CONFIG_USER_ONLY
+        env->bus_errore = true;
+#endif
+    }
+
     riscv_cpu_register_gdb_regs_for_features(cs);
 
     qemu_init_vcpu(cs);
@@ -598,6 +606,7 @@ static Property riscv_cpu_properties[] = {
     DEFINE_PROP_UINT16("elen", RISCVCPU, cfg.elen, 64),
     DEFINE_PROP_BOOL("mmu", RISCVCPU, cfg.mmu, true),
     DEFINE_PROP_BOOL("pmp", RISCVCPU, cfg.pmp, true),
+    DEFINE_PROP_BOOL("beu", RISCVCPU, cfg.beu, false),
     DEFINE_PROP_UINT64("resetvec", RISCVCPU, cfg.resetvec, DEFAULT_RSTVEC),
     DEFINE_PROP_BOOL("nmi", RISCVCPU, cfg.rnmi, false),
     DEFINE_PROP_UINT64("nmi-interrupt-vector", RISCVCPU, cfg.rnmi_irqvec,
