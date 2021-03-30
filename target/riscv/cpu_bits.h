@@ -580,6 +580,7 @@
 #define IRQ_S_EXT                          9
 #define IRQ_VS_EXT                         10
 #define IRQ_M_EXT                          11
+#define IRQ_BUS_ERROR                      128
 
 /* mip masks */
 #define MIP_USIP                           (1 << IRQ_U_SOFT)
@@ -610,5 +611,6 @@
 
 /* RISC-V-specific interrupt pending bits. */
 #define CPU_INTERRUPT_RNMI                 CPU_INTERRUPT_TGT_EXT_0
+#define CPU_INTERRUPT_BUS_ERROR            CPU_INTERRUPT_TGT_EXT_1
 
 #endif

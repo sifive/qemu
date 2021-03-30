@@ -82,7 +82,10 @@ static int riscv_cpu_local_irq_pending(CPURISCVState *env)
 
     irqs = (pending & ~env->mideleg & -mie) | (pending &  env->mideleg & -sie);
 
-    if (irqs) {
+    if (riscv_feature(env, RISCV_FEATURE_BEU) &&
+        env->bus_errore && env->bus_errorp) {
+        return IRQ_BUS_ERROR; /* bus error unit local interrupt */
+    } else if (irqs) {
         return ctz64(irqs); /* since non-zero */
     } else {
         return EXCP_NONE; /* indicates no pending interrupt */
@@ -93,7 +96,9 @@ static int riscv_cpu_local_irq_pending(CPURISCVState *env)
 bool riscv_cpu_exec_interrupt(CPUState *cs, int interrupt_request)
 {
 #if !defined(CONFIG_USER_ONLY)
-    uint32_t mask = CPU_INTERRUPT_HARD | CPU_INTERRUPT_RNMI;
+    uint32_t mask = CPU_INTERRUPT_HARD |
+        CPU_INTERRUPT_RNMI |
+        CPU_INTERRUPT_BUS_ERROR;
 
     if (interrupt_request & mask) {
         RISCVCPU *cpu = RISCV_CPU(cs);
@@ -951,6 +956,12 @@ void riscv_cpu_do_interrupt(CPUState *cs)
         cause = RISCV_EXCP_BREAKPOINT;
     }
 
+    if (riscv_feature(env, RISCV_FEATURE_BEU)) {
+        if (async && cause == IRQ_BUS_ERROR) {
+            env->bus_errore = false;
+        }
+    }
+
     if (!async) {
         /* set tval to badaddr for traps with address information */
         switch (cause) {
@@ -1091,6 +1102,14 @@ void riscv_cpu_do_interrupt(CPUState *cs)
 
         if (nmi_execp) {
             nextpc = env->rnmi_excpvec;
+        } else if (riscv_feature(env, RISCV_FEATURE_BEU)) {
+            /*
+             * Bus error unit local interrupt can only be taken
+             * with interrupt Direct mode.
+             */
+            nextpc = (env->mtvec >> 2 << 2) +
+                ((async && (env->mtvec & 3) == 1 && cause != IRQ_BUS_ERROR) ?
+                 cause * 4 : 0);
         } else {
             nextpc = (env->mtvec >> 2 << 2) +
                 ((async && (env->mtvec & 3) == 1) ? cause * 4 : 0);
