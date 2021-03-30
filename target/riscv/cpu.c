@@ -149,6 +149,14 @@ static void set_resetvec(CPURISCVState *env, int resetvec)
 #endif
 }
 
+static void set_rnmi_vectors(CPURISCVState *env, int irqvec, int excpvec)
+{
+#ifndef CONFIG_USER_ONLY
+    env->rnmi_irqvec = irqvec;
+    env->rnmi_excpvec = excpvec;
+#endif
+}
+
 static void riscv_any_cpu_init(Object *obj)
 {
     CPURISCVState *env = &RISCV_CPU(obj)->env;
@@ -423,6 +431,14 @@ static void riscv_cpu_realize(DeviceState *dev, Error **errp)
 
     set_resetvec(env, cpu->cfg.resetvec);
 
+    if (cpu->cfg.rnmi) {
+        set_feature(env, RISCV_FEATURE_RNMI);
+        set_rnmi_vectors(env, cpu->cfg.rnmi_irqvec, cpu->cfg.rnmi_excpvec);
+#ifndef CONFIG_USER_ONLY
+        env->nmie = true;
+#endif
+    }
+
     /* If only XLEN is set for misa, then set misa from properties */
     if (env->misa == RV32 || env->misa == RV64) {
         /* Do some ISA extension error checking */
@@ -583,6 +599,11 @@ static Property riscv_cpu_properties[] = {
     DEFINE_PROP_BOOL("mmu", RISCVCPU, cfg.mmu, true),
     DEFINE_PROP_BOOL("pmp", RISCVCPU, cfg.pmp, true),
     DEFINE_PROP_UINT64("resetvec", RISCVCPU, cfg.resetvec, DEFAULT_RSTVEC),
+    DEFINE_PROP_BOOL("nmi", RISCVCPU, cfg.rnmi, false),
+    DEFINE_PROP_UINT64("nmi-interrupt-vector", RISCVCPU, cfg.rnmi_irqvec,
+                       DEFAULT_RNMI_IRQVEC),
+    DEFINE_PROP_UINT64("nmi-exception-vector", RISCVCPU, cfg.rnmi_excpvec,
+                       DEFAULT_RNMI_EXCPVEC),
     DEFINE_PROP_END_OF_LIST(),
 };
 
