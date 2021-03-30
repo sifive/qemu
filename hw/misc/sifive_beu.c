@@ -195,6 +195,14 @@ static void sifive_beu_realize(DeviceState *dev, Error **errp)
                           TYPE_SIFIVE_BEU, s->mmio_size);
     sysbus_init_mmio(SYS_BUS_DEVICE(dev), &s->mmio);
     qdev_init_gpio_in(dev, bus_error_handler, SIFIVE_BEU_NUM_ERRORS);
+
+    if (s->irq_mode == BEU_IRQ_RNMI) {
+        /* Connect to CPU's bus error RNMI */
+        DeviceState *cpu = DEVICE(qemu_get_cpu(s->hartid));
+        SysBusDevice *sbd = SYS_BUS_DEVICE(dev);
+        sysbus_init_irq(sbd, &s->rnmi);
+        sysbus_connect_irq(sbd, 0, qdev_get_gpio_in_named(cpu, "rnmi", 3));
+    }
 }
 
 static void sifive_beu_reset(DeviceState *dev)
