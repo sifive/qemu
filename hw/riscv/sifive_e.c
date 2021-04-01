@@ -177,6 +177,10 @@ static void sifive_e_soc_init(Object *obj)
     object_property_set_int(OBJECT(&s->cpus), "num-harts", ms->smp.cpus,
                             &error_abort);
     object_property_set_int(OBJECT(&s->cpus), "resetvec", 0x1004, &error_abort);
+    object_property_set_uint(OBJECT(&s->cpus), "rnmi_irqvec",
+                             0x20410000, &error_abort);
+    object_property_set_uint(OBJECT(&s->cpus), "rnmi_excpvec",
+                             0x20420000, &error_abort);
     object_initialize_child(obj, "riscv.sifive.e.gpio0", &s->gpio,
                             TYPE_SIFIVE_GPIO);
 }
