@@ -3663,12 +3663,12 @@ GEN_VEXT_V_ENV(vfsqrt_v_d, 8, 8)
 /*
  * Vector Floating-Point Reciprocal Square-Root Estimate Instruction
  *
- * Adapted from riscv-v-spec recip.cc:
- * https://github.com/riscv/riscv-v-spec/blob/master/recip.cc
+ * Adapted from riscv-v-spec recip.c:
+ * https://github.com/riscv/riscv-v-spec/blob/master/recip.c
  */
 static uint64_t frsqrt7(uint64_t f, int exp_size, int frac_size)
 {
-    bool sign = extract64(f, frac_size + exp_size, 1);
+    uint64_t sign = extract64(f, frac_size + exp_size, 1);
     uint64_t exp = extract64(f, frac_size, exp_size);
     uint64_t frac = extract64(f, 0, frac_size);
 
@@ -3845,13 +3845,13 @@ GEN_VEXT_V_ENV(vfrsqrt7_v_d, 8, 8)
 /*
  * Vector Floating-Point Reciprocal Estimate Instruction
  *
- * Adapted from riscv-v-spec recip.cc:
- * https://github.com/riscv/riscv-v-spec/blob/master/recip.cc
+ * Adapted from riscv-v-spec recip.c:
+ * https://github.com/riscv/riscv-v-spec/blob/master/recip.c
  */
 static uint64_t frec7(uint64_t f, int exp_size, int frac_size,
                       float_status *s)
 {
-    bool sign = extract64(f, frac_size + exp_size, 1);
+    uint64_t sign = extract64(f, frac_size + exp_size, 1);
     uint64_t exp = extract64(f, frac_size, exp_size);
     uint64_t frac = extract64(f, 0, frac_size);
 
