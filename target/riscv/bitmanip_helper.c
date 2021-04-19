@@ -100,3 +100,86 @@ target_ulong HELPER(gorcw)(target_ulong rs1, target_ulong rs2)
 }
 
 #endif
+
+static target_ulong do_clmul(target_long rs1,
+                             target_ulong rs2,
+                             int bits)
+{
+    target_ulong x = 0;
+    int i;
+
+    for (i = 0; i < bits; i++) {
+        if ((rs2 >> i) & 1) {
+            x ^= rs1 << i;
+        }
+    }
+
+    return x;
+}
+
+static target_ulong do_clmulh(target_long rs1,
+                              target_ulong rs2,
+                              int bits)
+{
+    target_ulong x = 0;
+    int i;
+
+    for (i = 0; i < bits; i++) {
+        if ((rs2 >> i) & 1) {
+            x ^= rs1 >> (bits - i);
+        }
+    }
+
+    return x;
+}
+
+static target_ulong do_clmulr(target_long rs1,
+                              target_ulong rs2,
+                              int bits)
+{
+    target_ulong x = 0;
+    int i;
+
+    for (i = 0; i < bits; i++) {
+        if ((rs2 >> i) & 1) {
+            x ^= rs1 >> (bits - i - 1);
+        }
+    }
+
+    return x;
+}
+
+target_ulong HELPER(clmul)(target_ulong rs1, target_ulong rs2)
+{
+    return do_clmul(rs1, rs2, TARGET_LONG_BITS);
+}
+
+target_ulong HELPER(clmulh)(target_ulong rs1, target_ulong rs2)
+{
+    return do_clmulh(rs1, rs2, TARGET_LONG_BITS);
+}
+
+target_ulong HELPER(clmulr)(target_ulong rs1, target_ulong rs2)
+{
+    return do_clmulr(rs1, rs2, TARGET_LONG_BITS);
+}
+
+/* RV64-only instructions */
+#ifdef TARGET_RISCV64
+
+target_ulong HELPER(clmulw)(target_ulong rs1, target_ulong rs2)
+{
+    return do_clmul(rs1, rs2, 32);
+}
+
+target_ulong HELPER(clmulhw)(target_ulong rs1, target_ulong rs2)
+{
+    return do_clmulh(rs1, rs2, 32);
+}
+
+target_ulong HELPER(clmulrw)(target_ulong rs1, target_ulong rs2)
+{
+    return do_clmulr(rs1, rs2, 32);
+}
+
+#endif

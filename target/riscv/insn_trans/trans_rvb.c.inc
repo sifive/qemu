@@ -226,6 +226,24 @@ static bool trans_gorci(DisasContext *ctx, arg_gorci *a)
     return gen_shifti(ctx, a, gen_helper_gorc);
 }
 
+static bool trans_clmul(DisasContext *ctx, arg_clmul *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_arith(ctx, a, gen_helper_clmul);
+}
+
+static bool trans_clmulh(DisasContext *ctx, arg_clmulh *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_arith(ctx, a, gen_helper_clmulh);
+}
+
+static bool trans_clmulr(DisasContext *ctx, arg_clmulr *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_arith(ctx, a, gen_helper_clmulr);
+}
+
 #define GEN_TRANS_SHADD(SHAMT)                                             \
 static bool trans_sh##SHAMT##add(DisasContext *ctx, arg_sh##SHAMT##add *a) \
 {                                                                          \
@@ -376,6 +394,24 @@ static bool trans_gorciw(DisasContext *ctx, arg_gorciw *a)
 {
     REQUIRE_EXT(ctx, RVB);
     return gen_shiftiw(ctx, a, gen_gorcw);
+}
+
+static bool trans_clmulw(DisasContext *ctx, arg_clmulw *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_arith(ctx, a, gen_clmulw);
+}
+
+static bool trans_clmulhw(DisasContext *ctx, arg_clmulhw *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_arith(ctx, a, gen_clmulhw);
+}
+
+static bool trans_clmulrw(DisasContext *ctx, arg_clmulrw *a)
+{
+    REQUIRE_EXT(ctx, RVB);
+    return gen_arith(ctx, a, gen_clmulrw);
 }
 
 #define GEN_TRANS_SHADD_UW(SHAMT)                             \

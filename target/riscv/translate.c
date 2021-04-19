@@ -738,6 +738,27 @@ static void gen_gorcw(TCGv ret, TCGv arg1, TCGv arg2)
     gen_helper_gorcw(ret, arg1, arg2);
 }
 
+static void gen_clmulw(TCGv ret, TCGv arg1, TCGv arg2)
+{
+    tcg_gen_ext32u_tl(arg1, arg1);
+    gen_helper_clmulw(ret, arg1, arg2);
+    tcg_gen_ext32s_tl(ret, ret);
+}
+
+static void gen_clmulhw(TCGv ret, TCGv arg1, TCGv arg2)
+{
+    tcg_gen_ext32u_tl(arg1, arg1);
+    gen_helper_clmulhw(ret, arg1, arg2);
+    tcg_gen_ext32s_tl(ret, ret);
+}
+
+static void gen_clmulrw(TCGv ret, TCGv arg1, TCGv arg2)
+{
+    tcg_gen_ext32u_tl(arg1, arg1);
+    gen_helper_clmulrw(ret, arg1, arg2);
+    tcg_gen_ext32s_tl(ret, ret);
+}
+
 #define GEN_SHADD_UW(SHAMT)                                       \
 static void gen_sh##SHAMT##add_uw(TCGv ret, TCGv arg1, TCGv arg2) \
 {                                                                 \
