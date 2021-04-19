@@ -3663,7 +3663,7 @@ GEN_VEXT_V_ENV(vfsqrt_v_d, 8, 8)
 /* Vector Floating-Point Reciprocal Square-Root Estimate Instruction */
 static uint64_t frsqrte7(uint64_t f, int exp_size, int frac_size)
 {
-    bool sign = extract64(f, frac_size + exp_size, 1);
+    uint64_t sign = extract64(f, frac_size + exp_size, 1);
     uint64_t exp = extract64(f, frac_size, exp_size);
     uint64_t frac = extract64(f, 0, frac_size);
 
@@ -3835,7 +3835,7 @@ GEN_VEXT_V_ENV(vfrsqrte7_v_d, 8, 8)
 static uint64_t frece7(uint64_t f, int exp_size, int frac_size,
                        float_status *s)
 {
-    bool sign = extract64(f, frac_size + exp_size, 1);
+    uint64_t sign = extract64(f, frac_size + exp_size, 1);
     uint64_t exp = extract64(f, frac_size, exp_size);
     uint64_t frac = extract64(f, 0, frac_size);
 
