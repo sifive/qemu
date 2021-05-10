@@ -186,6 +186,9 @@ config SIFIVE_U_PRCI
 config SIFIVE_L2PF
     bool
 
+config SIFIVE_BEU
+    bool
+
 config VIRT_CTRL
     bool
 
