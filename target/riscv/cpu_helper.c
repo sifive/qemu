@@ -25,6 +25,7 @@
 #include "tcg/tcg-op.h"
 #include "trace.h"
 #include "semihosting/common-semi.h"
+#include "hw/misc/beu.h"
 
 int riscv_cpu_mmu_index(CPURISCVState *env, bool ifetch)
 {
@@ -773,6 +774,18 @@ void riscv_cpu_do_transaction_failed(CPUState *cs, hwaddr physaddr,
         cs->exception_index = RISCV_EXCP_STORE_AMO_ACCESS_FAULT;
     } else {
         cs->exception_index = RISCV_EXCP_LOAD_ACCESS_FAULT;
+    }
+
+    if (riscv_feature(env, RISCV_FEATURE_BEU) && cpu->buserror) {
+        BEUInterfaceClass *bic = BEU_INTERFACE_GET_CLASS(cpu->buserror);
+        BEUInterface *bi = BEU_INTERFACE(cpu->buserror);
+
+        if (bic->handle_bus_error(bi, access_type, response, physaddr)) {
+            env->bus_errore = true;
+            return;
+        }
+
+        env->bus_errore = true;
     }
 
     env->badaddr = addr;
