@@ -17,7 +17,9 @@
  */
 
 #define REQUIRE_ZFH(ctx) do { \
-    return ctx->ext_zfh;      \
+    if (ctx->ext_zfh == 0) {  \
+        return false;         \
+    }                         \
 } while (0)
 
 static bool trans_flh(DisasContext *ctx, arg_flh *a)
