@@ -183,6 +183,9 @@ config SIFIVE_U_OTP
 config SIFIVE_U_PRCI
     bool
 
+config SIFIVE_L2PF
+    bool
+
 config VIRT_CTRL
     bool
 
