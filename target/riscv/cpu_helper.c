@@ -307,6 +307,30 @@ void riscv_cpu_set_rnmi(RISCVCPU *cpu, uint32_t irq, bool level)
     }
 }
 
+void riscv_cpu_set_bus_error(RISCVCPU *cpu, bool level)
+{
+    CPURISCVState *env = &cpu->env;
+    CPUState *cs = CPU(cpu);
+    bool locked = false;
+
+    if (!qemu_mutex_iothread_locked()) {
+        locked = true;
+        qemu_mutex_lock_iothread();
+    }
+
+    if (level) {
+        env->bus_errorp = true;
+        cpu_interrupt(cs, CPU_INTERRUPT_BUS_ERROR);
+    } else {
+        env->bus_errorp = false;
+        cpu_reset_interrupt(cs, CPU_INTERRUPT_BUS_ERROR);
+    }
+
+    if (locked) {
+        qemu_mutex_unlock_iothread();
+    }
+}
+
 void riscv_cpu_set_rdtime_fn(CPURISCVState *env, uint64_t (*fn)(uint32_t),
                              uint32_t arg)
 {
