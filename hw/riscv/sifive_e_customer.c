@@ -46,6 +46,7 @@
 #include "hw/misc/sifive_e_prci.h"
 #include "hw/misc/sifive_test.h"
 #include "hw/misc/sifive_remapper.h"
+#include "hw/misc/sifive_l2pf.h"
 #include "chardev/char.h"
 #include "sysemu/arch_init.h"
 #include "sysemu/sysemu.h"
@@ -56,6 +57,7 @@ static const MemMapEntry sifive_e_memmap[] = {
     [SIFIVE_E_CUSTOMER_DEV_OTP] =      {    0x20000,     0x2000 },
     [SIFIVE_E_CUSTOMER_DEV_TEST] =     {   0x100000,     0x1000 },
     [SIFIVE_E_CUSTOMER_DEV_CLINT] =    {  0x2000000,    0x10000 },
+    [SIFIVE_E_CUSTOMER_DEV_L2PF] =     {  0x2030000,     0x2000 },
     [SIFIVE_E_CUSTOMER_DEV_REMAPPER] = {  0x3000000,     0x1000 },
     [SIFIVE_E_CUSTOMER_DEV_PLIC] =     {  0xc000000,  0x4000000 },
     [SIFIVE_E_CUSTOMER_DEV_AON] =      { 0x10000000,     0x8000 },
@@ -269,6 +271,12 @@ static void sifive_e_customer_soc_realize(DeviceState *dev, Error **errp)
     sifive_remapper_create(memmap[SIFIVE_E_CUSTOMER_DEV_REMAPPER].base,
                            SIFIVE_REMAPPER_VERSION_REVISITED,
                            SIFIVE_REMAPPER_MAX_ENTRIES_REVISED);
+
+    /* L2 Stride Prefetcher (SPF) */
+    for (int i = 0; i < ms->smp.cpus; i++) {
+        sifive_l2pf_create(memmap[SIFIVE_E_CUSTOMER_DEV_L2PF].base +
+                           i * SIFIVE_E_CUSTOMER_L2PF_STRIDE);
+    }
 }
 
 static void sifive_e_customer_soc_class_init(ObjectClass *oc, void *data)
