@@ -44,6 +44,7 @@
 #include "hw/intc/sifive_clint.h"
 #include "hw/intc/sifive_plic.h"
 #include "hw/misc/sifive_e_prci.h"
+#include "hw/misc/sifive_test.h"
 #include "chardev/char.h"
 #include "sysemu/arch_init.h"
 #include "sysemu/sysemu.h"
@@ -52,6 +53,7 @@ static const MemMapEntry sifive_e_memmap[] = {
     [SIFIVE_E_CUSTOMER_DEV_DEBUG] =    {        0x0,     0x1000 },
     [SIFIVE_E_CUSTOMER_DEV_MROM] =     {     0x1000,     0x2000 },
     [SIFIVE_E_CUSTOMER_DEV_OTP] =      {    0x20000,     0x2000 },
+    [SIFIVE_E_CUSTOMER_DEV_TEST] =     {   0x100000,     0x1000 },
     [SIFIVE_E_CUSTOMER_DEV_CLINT] =    {  0x2000000,    0x10000 },
     [SIFIVE_E_CUSTOMER_DEV_PLIC] =     {  0xc000000,  0x4000000 },
     [SIFIVE_E_CUSTOMER_DEV_AON] =      { 0x10000000,     0x8000 },
@@ -257,6 +259,9 @@ static void sifive_e_customer_soc_realize(DeviceState *dev, Error **errp)
                            memmap[SIFIVE_E_CUSTOMER_DEV_XIP].size, &error_fatal);
     memory_region_add_subregion(sys_mem, memmap[SIFIVE_E_CUSTOMER_DEV_XIP].base,
         &s->xip_mem);
+
+    /* SiFive Test MMIO device */
+    sifive_test_create(memmap[SIFIVE_E_CUSTOMER_DEV_TEST].base);
 }
 
 static void sifive_e_customer_soc_class_init(ObjectClass *oc, void *data)
