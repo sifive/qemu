@@ -176,6 +176,7 @@ static void sifive_e_customer_soc_init(Object *obj)
 {
     MachineState *ms = MACHINE(qdev_get_machine());
     SiFiveECustomerSoCState *s = RISCV_E_CUSTOMER_SOC(obj);
+    g_autofree char *prop_name = NULL;
 
     object_initialize_child(obj, "cpus", &s->cpus, TYPE_RISCV_HART_ARRAY);
     object_property_set_int(OBJECT(&s->cpus), "num-harts", ms->smp.cpus,
@@ -183,6 +184,22 @@ static void sifive_e_customer_soc_init(Object *obj)
     object_property_set_int(OBJECT(&s->cpus), "resetvec", 0x1004, &error_abort);
     object_initialize_child(obj, "riscv.sifive.e.customer.gpio0", &s->gpio,
                             TYPE_SIFIVE_GPIO);
+
+    object_property_set_uint(OBJECT(&s->cpus), "len-nmi-interrupt-vector",
+                             ms->smp.cpus, &error_abort);
+    object_property_set_uint(OBJECT(&s->cpus), "len-nmi-exception-vector",
+                             ms->smp.cpus, &error_abort);
+
+    for (int i = 0; i < ms->smp.cpus; i++) {
+        prop_name = g_strdup_printf("nmi-interrupt-vector[%d]", i);
+        object_property_set_uint(OBJECT(&s->cpus), prop_name,
+                                 SIFIVE_E_CUSTOMER_NMI_IRQVEC,
+                                 &error_abort);
+        prop_name = g_strdup_printf("nmi-exception-vector[%d]", i);
+        object_property_set_uint(OBJECT(&s->cpus), prop_name,
+                                 SIFIVE_E_CUSTOMER_NMI_EXCPVEC,
+                                 &error_abort);
+    }
 }
 
 static void sifive_e_customer_soc_realize(DeviceState *dev, Error **errp)
