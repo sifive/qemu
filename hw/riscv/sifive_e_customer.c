@@ -49,6 +49,7 @@
 #include "hw/misc/sifive_l2pf.h"
 #include "hw/misc/beu.h"
 #include "hw/misc/sifive_beu.h"
+#include "hw/misc/sifive_err_dev.h"
 #include "chardev/char.h"
 #include "sysemu/arch_init.h"
 #include "sysemu/sysemu.h"
@@ -56,6 +57,7 @@
 static const MemMapEntry sifive_e_memmap[] = {
     [SIFIVE_E_CUSTOMER_DEV_DEBUG] =    {        0x0,     0x1000 },
     [SIFIVE_E_CUSTOMER_DEV_MROM] =     {     0x1000,     0x2000 },
+    [SIFIVE_E_CUSTOMER_DEV_ERR_DEV] =  {     0x3000,     0x1000 },
     [SIFIVE_E_CUSTOMER_DEV_OTP] =      {    0x20000,     0x2000 },
     [SIFIVE_E_CUSTOMER_DEV_TEST] =     {   0x100000,     0x1000 },
     [SIFIVE_E_CUSTOMER_DEV_CLINT] =    {  0x2000000,    0x10000 },
@@ -314,6 +316,10 @@ static void sifive_e_customer_soc_realize(DeviceState *dev, Error **errp)
                              OBJ_PROP_LINK_STRONG);
     object_property_set_link(OBJECT(&s->cpus.harts[0]), "buserror",
                              OBJECT(beu), errp);
+
+    /* Error Device */
+    sifive_err_dev_create(memmap[SIFIVE_E_CUSTOMER_DEV_ERR_DEV].base,
+                          memmap[SIFIVE_E_CUSTOMER_DEV_ERR_DEV].size);
 }
 
 static void sifive_e_customer_soc_class_init(ObjectClass *oc, void *data)
