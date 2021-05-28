@@ -55,6 +55,7 @@ config SIFIVE_E_CUSTOMER
     select SIFIVE_E_PRCI
     select SIFIVE_REMAPPER
     select SIFIVE_L2PF
+    select SIFIVE_BEU
     select UNIMP
 
 config SIFIVE_U

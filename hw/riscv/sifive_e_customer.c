@@ -47,6 +47,8 @@
 #include "hw/misc/sifive_test.h"
 #include "hw/misc/sifive_remapper.h"
 #include "hw/misc/sifive_l2pf.h"
+#include "hw/misc/beu.h"
+#include "hw/misc/sifive_beu.h"
 #include "chardev/char.h"
 #include "sysemu/arch_init.h"
 #include "sysemu/sysemu.h"
@@ -59,6 +61,7 @@ static const MemMapEntry sifive_e_memmap[] = {
     [SIFIVE_E_CUSTOMER_DEV_CLINT] =    {  0x2000000,    0x10000 },
     [SIFIVE_E_CUSTOMER_DEV_L2PF] =     {  0x2030000,     0x2000 },
     [SIFIVE_E_CUSTOMER_DEV_REMAPPER] = {  0x3000000,     0x1000 },
+    [SIFIVE_E_CUSTOMER_DEV_BEU] =      {  0x4000000,     0x1000 },
     [SIFIVE_E_CUSTOMER_DEV_PLIC] =     {  0xc000000,  0x4000000 },
     [SIFIVE_E_CUSTOMER_DEV_AON] =      { 0x10000000,     0x8000 },
     [SIFIVE_E_CUSTOMER_DEV_PRCI] =     { 0x10008000,     0x8000 },
@@ -294,6 +297,23 @@ static void sifive_e_customer_soc_realize(DeviceState *dev, Error **errp)
         sifive_l2pf_create(memmap[SIFIVE_E_CUSTOMER_DEV_L2PF].base +
                            i * SIFIVE_E_CUSTOMER_L2PF_STRIDE);
     }
+
+    /* Bus error unit */
+    DeviceState *beu = sifive_beu_create(memmap[SIFIVE_E_CUSTOMER_DEV_BEU].base,
+                                         memmap[SIFIVE_E_CUSTOMER_DEV_BEU].size,
+                                         false,
+                                         qdev_get_gpio_in(DEVICE(s->plic),
+                                             SIFIVE_E_CUSTOMER_BEU_IRQ),
+                                         SIFIVE_E_CUSTOMER_BEU_RNMI, 0);
+
+    /* Add and set BEU link directly to CPU 0. */
+    object_property_add_link(OBJECT(&s->cpus.harts[0]), "buserror",
+                             TYPE_BEU_INTERFACE,
+                             (Object **)&s->cpus.harts[0].buserror,
+                             object_property_allow_set_link,
+                             OBJ_PROP_LINK_STRONG);
+    object_property_set_link(OBJECT(&s->cpus.harts[0]), "buserror",
+                             OBJECT(beu), errp);
 }
 
 static void sifive_e_customer_soc_class_init(ObjectClass *oc, void *data)
