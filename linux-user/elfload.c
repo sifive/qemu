@@ -1398,6 +1398,17 @@ static inline void init_thread(struct target_pt_regs *regs, struct image_info *i
 #define ELF_CLASS ELFCLASS64
 #endif
 
+#define ELF_HWCAP get_elf_hwcap()
+
+static uint32_t get_elf_hwcap(void)
+{
+    RISCVCPU *cpu = RISCV_CPU(thread_cpu);
+    /* Take lower 26 bits from misa.  */
+    uint32_t hwcap = cpu->env.misa & 0x3ffffff;
+
+    return hwcap;
+}
+
 static inline void init_thread(struct target_pt_regs *regs,
                                struct image_info *infop)
 {
