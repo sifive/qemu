@@ -1307,12 +1307,21 @@ static int write_vstval(CPURISCVState *env, int csrno, target_ulong val)
 
 static int read_vsatp(CPURISCVState *env, int csrno, target_ulong *val)
 {
+    if (!riscv_feature(env, RISCV_FEATURE_MMU)) {
+        *val = 0;
+        return 0;
+    }
+
     *val = env->vsatp;
     return 0;
 }
 
 static int write_vsatp(CPURISCVState *env, int csrno, target_ulong val)
 {
+    if (!riscv_feature(env, RISCV_FEATURE_MMU)) {
+        return 0;
+    }
+
     env->vsatp = val;
     return 0;
 }
