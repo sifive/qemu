@@ -242,6 +242,16 @@ void helper_tlb_flush(CPURISCVState *env)
 void helper_hyp_tlb_flush(CPURISCVState *env)
 {
     CPUState *cs = env_cpu(env);
+    uint32_t exception;
+
+    if (!riscv_feature(env, RISCV_FEATURE_MMU)) {
+        if (riscv_cpu_virt_enabled(env)) {
+            exception = RISCV_EXCP_VIRT_INSTRUCTION_FAULT;
+        } else {
+            exception = RISCV_EXCP_ILLEGAL_INST;
+        }
+        riscv_raise_exception(env, exception, GETPC());
+    }
 
     if (env->priv == PRV_S && riscv_cpu_virt_enabled(env)) {
         riscv_raise_exception(env, RISCV_EXCP_VIRT_INSTRUCTION_FAULT, GETPC());
