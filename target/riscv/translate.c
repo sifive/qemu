@@ -489,9 +489,19 @@ static inline void mark_fs_dirty(DisasContext *ctx) { }
 static void mark_vs_dirty(DisasContext *ctx)
 {
     TCGv tmp;
+
+    if (ctx->virt_enabled) {
+        tmp = tcg_temp_new();
+        tcg_gen_ld_tl(tmp, cpu_env, offsetof(CPURISCVState, mstatus_hs));
+        tcg_gen_ori_tl(tmp, tmp, MSTATUS_VS | MSTATUS_SD);
+        tcg_gen_st_tl(tmp, cpu_env, offsetof(CPURISCVState, mstatus_hs));
+        tcg_temp_free(tmp);
+    }
+
     if (ctx->mstatus_vs == MSTATUS_VS) {
         return;
     }
+
     /* Remember the state change for the rest of the TB.  */
     ctx->mstatus_vs = MSTATUS_VS;
 
@@ -500,11 +510,6 @@ static void mark_vs_dirty(DisasContext *ctx)
     tcg_gen_ori_tl(tmp, tmp, MSTATUS_VS | MSTATUS_SD);
     tcg_gen_st_tl(tmp, cpu_env, offsetof(CPURISCVState, mstatus));
 
-    if (ctx->virt_enabled) {
-        tcg_gen_ld_tl(tmp, cpu_env, offsetof(CPURISCVState, mstatus_hs));
-        tcg_gen_ori_tl(tmp, tmp, MSTATUS_VS | MSTATUS_SD);
-        tcg_gen_st_tl(tmp, cpu_env, offsetof(CPURISCVState, mstatus_hs));
-    }
     tcg_temp_free(tmp);
 }
 #else
