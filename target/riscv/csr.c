@@ -552,6 +552,46 @@ static RISCVException debug(CPURISCVState *env, int csrno)
 
     return RISCV_EXCP_ILLEGAL_INST;
 }
+
+static RISCVException debug_hmode(CPURISCVState *env, int csrno)
+{
+    RISCVException ret;
+
+    ret = debug(env, csrno);
+
+    if (ret != RISCV_EXCP_NONE) {
+        return ret;
+    }
+
+    ret = hmode(env, csrno);
+
+    if (ret != RISCV_EXCP_NONE) {
+        return ret;
+    }
+
+    return RISCV_EXCP_NONE;
+
+}
+
+static RISCVException debug_smode(CPURISCVState *env, int csrno)
+{
+    RISCVException ret;
+
+    ret = debug(env, csrno);
+
+    if (ret != RISCV_EXCP_NONE) {
+        return ret;
+    }
+
+    ret = smode(env, csrno);
+
+    if (ret != RISCV_EXCP_NONE) {
+        return ret;
+    }
+
+    return RISCV_EXCP_NONE;
+
+}
 #endif
 
 static RISCVException seed(CPURISCVState *env, int csrno)
@@ -4239,6 +4279,46 @@ static RISCVException write_upmbase(CPURISCVState *env, int csrno,
     return RISCV_EXCP_NONE;
 }
 
+
+/* Debug/Trace support */
+
+static RISCVException rmw_mcontext(CPURISCVState *env, int csrno,
+                                   target_ulong *ret_val,
+                                   target_ulong new_val, target_ulong wr_mask)
+{
+    if (ret_val) {
+        *ret_val = env->mcontext;
+    }
+
+    env->mcontext = new_val & wr_mask;
+
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException rmw_scontext(CPURISCVState *env, int csrno,
+                                   target_ulong *ret_val,
+                                   target_ulong new_val, target_ulong wr_mask)
+{
+    if (ret_val) {
+        *ret_val = env->scontext;
+    }
+
+    env->scontext = new_val & wr_mask;
+
+    return RISCV_EXCP_NONE;
+}
+
+/*
+ * hcontext shares the same underlying state of mcontext,
+ * but would result in an illegal instruction exception
+ * if RVH is not implemented.
+ */
+static RISCVException rmw_hcontext(CPURISCVState *env, int csrno,
+                                   target_ulong *ret_val,
+                                   target_ulong new_val, target_ulong wr_mask)
+{
+    return rmw_mcontext(env, csrno, ret_val, new_val, wr_mask);
+}
 #endif
 
 /* Crypto Extension */
@@ -5193,6 +5273,11 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
                              write_mhpmcounterh                         },
     [CSR_SCOUNTOVF]      = { "scountovf", sscofpmf,  read_scountovf,
                              .min_priv_ver = PRIV_VERSION_1_12_0 },
+
+    /* Debug/Trace support */
+    [CSR_MCONTEXT] = { "mcontext", debug,       NULL, NULL, rmw_mcontext },
+    [CSR_HCONTEXT] = { "hcontext", debug_hmode, NULL, NULL, rmw_hcontext },
+    [CSR_SCONTEXT] = { "scontext", debug_smode, NULL, NULL, rmw_scontext },
 
 #endif /* !CONFIG_USER_ONLY */
 };
