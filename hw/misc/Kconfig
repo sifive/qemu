@@ -174,4 +174,7 @@ config VIRT_CTRL
 config LASI
     bool
 
+config RISCV_WORLDGUARD
+    bool
+
 source macio/Kconfig

@@ -587,6 +587,10 @@ static void riscv_cpu_reset(DeviceState *dev)
         riscv_trigger_init(env);
     }
 
+    if (riscv_feature(env, RISCV_FEATURE_WORLDGUARD) && env->wg_reset) {
+        env->wg_reset(env);
+    }
+
     if (kvm_enabled()) {
         kvm_riscv_reset_vcpu(cpu);
     }
@@ -686,6 +690,10 @@ static void riscv_cpu_realize(DeviceState *dev, Error **errp)
 
 
 #ifndef CONFIG_USER_ONLY
+    if (cpu->cfg.worldguard) {
+        riscv_set_feature(env, RISCV_FEATURE_WORLDGUARD);
+    }
+
     if (cpu->cfg.ext_sstc) {
         riscv_timer_init(cpu);
     }
@@ -1094,6 +1102,9 @@ static Property riscv_cpu_properties[] = {
 
     DEFINE_PROP_BOOL("rvv_ta_all_1s", RISCVCPU, cfg.rvv_ta_all_1s, false),
     DEFINE_PROP_BOOL("rvv_ma_all_1s", RISCVCPU, cfg.rvv_ma_all_1s, false),
+    DEFINE_PROP_BOOL("worldguard", RISCVCPU, cfg.worldguard, false),
+    DEFINE_PROP_UINT32("mwid", RISCVCPU, cfg.mwid, 0xffffffff),
+    DEFINE_PROP_UINT32("mwidlist", RISCVCPU, cfg.mwidlist, 0xffffffff),
     DEFINE_PROP_END_OF_LIST(),
 };
 
@@ -1130,7 +1141,7 @@ static const char *riscv_gdb_get_dynamic_xml(CPUState *cs, const char *xmlname)
 #include "hw/core/sysemu-cpu-ops.h"
 
 static const struct SysemuCPUOps riscv_sysemu_ops = {
-    .get_phys_page_debug = riscv_cpu_get_phys_page_debug,
+    .get_phys_page_attrs_debug = riscv_cpu_get_phys_page_attrs_debug,
     .write_elf64_note = riscv_cpu_write_elf64_note,
     .write_elf32_note = riscv_cpu_write_elf32_note,
     .legacy_vmsd = &vmstate_riscv_cpu,
