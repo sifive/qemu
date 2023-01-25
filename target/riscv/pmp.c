@@ -584,6 +584,15 @@ void mseccfg_csr_write(CPURISCVState *env, target_ulong val)
         val &= ~(MSECCFG_MMWP | MSECCFG_MML | MSECCFG_RLB);
     }
 
+    /* M-mode forward cfi to be enabled if cfi extension is implemented */
+    if (env_archcpu(env)->cfg.ext_cfi_lp) {
+        val |= (val & MSECCFG_MLPE);
+        /* If forward cfi in mseccfg is being toggled, flush tlb */
+        if ((env->mseccfg ^ val) & MSECCFG_MLPE) {
+                tlb_flush(env_cpu(env));
+        }
+    }
+
     env->mseccfg = val;
 }
 
