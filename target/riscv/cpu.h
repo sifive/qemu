@@ -164,6 +164,9 @@ struct CPUArchState {
     target_ulong retxh;
 
     target_ulong jvt;
+    /* CFI Extension user mode registers and state */
+    target_ulong ssp;
+    cfi_elp      elp;
 
 #ifdef CONFIG_USER_ONLY
     uint32_t elf_flags;
