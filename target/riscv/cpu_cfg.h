@@ -99,6 +99,9 @@ struct RISCVCPUConfig {
     uint32_t mvendorid;
     uint64_t marchid;
     uint64_t mimpid;
+    bool ext_zimops;
+    bool ext_cfi_ss;
+    bool ext_cfi_lp;
 
     /* Vendor-specific custom extensions */
     bool ext_xtheadba;

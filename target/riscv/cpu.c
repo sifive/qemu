@@ -150,6 +150,12 @@ static const struct isa_ext_data isa_edata_arr[] = {
     ISA_EXT_DATA_ENTRY(xtheadmempair, PRIV_VERSION_1_11_0, ext_xtheadmempair),
     ISA_EXT_DATA_ENTRY(xtheadsync, PRIV_VERSION_1_11_0, ext_xtheadsync),
     ISA_EXT_DATA_ENTRY(xventanacondops, PRIV_VERSION_1_12_0, ext_XVentanaCondOps),
+    ISA_EXT_DATA_ENTRY(zimops, PRIV_VERSION_1_12_0, ext_zimops),
+    ISA_EXT_DATA_ENTRY(zicfiss, PRIV_VERSION_1_12_0, ext_cfi_ss),
+    ISA_EXT_DATA_ENTRY(zicfilp, PRIV_VERSION_1_12_0, ext_cfi_lp),
+
+    DEFINE_PROP_END_OF_LIST(),
+
 };
 
 static bool isa_ext_is_enabled(RISCVCPU *cpu,
@@ -887,9 +893,9 @@ static void riscv_cpu_reset_hold(Object *obj)
     env->two_stage_lookup = false;
 
     env->menvcfg = (cpu->cfg.ext_svpbmt ? MENVCFG_PBMTE : 0) |
-                   (cpu->cfg.ext_svadu ? MENVCFG_HADE : 0);
+                   (cpu->cfg.ext_svadu ? MENVCFG_ADUE : 0);
     env->henvcfg = (cpu->cfg.ext_svpbmt ? HENVCFG_PBMTE : 0) |
-                   (cpu->cfg.ext_svadu ? HENVCFG_HADE : 0);
+                   (cpu->cfg.ext_svadu ? HENVCFG_ADUE : 0);
 
     /* Initialized default priorities of local interrupts. */
     for (i = 0; i < ARRAY_SIZE(env->miprio); i++) {
@@ -1304,6 +1310,18 @@ void riscv_cpu_validate_set_extensions(RISCVCPU *cpu, Error **errp)
         cpu->cfg.ext_zksh = true;
     }
 
+    if ((cpu->cfg.ext_cfi_ss || cpu->cfg.ext_cfi_lp) && !cpu->cfg.ext_zimops) {
+        error_setg(errp, "Zicfiss/Zicfilp extensions requires Zimops"
+                   "extension");
+        return;
+    }
+
+        /* Set the ISA extensions, checks should have happened above */
+        if (cpu->cfg.ext_zdinx || cpu->cfg.ext_zhinx ||
+            cpu->cfg.ext_zhinxmin) {
+            cpu->cfg.ext_zfinx = true;
+        }
+
     /*
      * Disable isa extensions based on priv spec after we
      * validated and set everything we need.
@@ -1468,6 +1486,11 @@ static void riscv_cpu_realize(DeviceState *dev, Error **errp)
     RISCVCPU *cpu = RISCV_CPU(dev);
     RISCVCPUClass *mcc = RISCV_CPU_GET_CLASS(dev);
     Error *local_err = NULL;
+
+    if (object_dynamic_cast(OBJECT(dev), TYPE_RISCV_CPU_ANY) != NULL) {
+        warn_report("The 'any' CPU is deprecated and will be "
+                    "removed in the future.");
+    }
 
     cpu_exec_realizefn(cs, &local_err);
     if (local_err != NULL) {
@@ -1949,6 +1972,13 @@ static Property riscv_cpu_properties[] = {
 #ifndef CONFIG_USER_ONLY
     DEFINE_PROP_UINT64("resetvec", RISCVCPU, env.resetvec, DEFAULT_RSTVEC),
 #endif
+    /*
+     * Zicfiss/Zicfilp CFI extensions implicitly mean Zimops is
+     * implemented
+     */
+    DEFINE_PROP_BOOL("zicfiss", RISCVCPU, cfg.ext_cfi_ss, true),
+    DEFINE_PROP_BOOL("zicfilp", RISCVCPU, cfg.ext_cfi_lp, true),
+    DEFINE_PROP_BOOL("zimops", RISCVCPU, cfg.ext_zimops, true),
 
     DEFINE_PROP_BOOL("short-isa-string", RISCVCPU, cfg.short_isa_string, false),
 
