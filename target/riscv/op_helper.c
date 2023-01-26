@@ -259,6 +259,47 @@ void helper_cbo_inval(CPURISCVState *env, target_ulong address)
     /* We don't emulate the cache-hierarchy, so we're done. */
 }
 
+void helper_sschk_mismatch(CPURISCVState *env, target_ulong rs1,
+                           target_ulong ssra)
+{
+    if (rs1 != ssra) {
+        env->cfi_violation_code = RISCV_EXCP_SW_CHECK_BCFI_VIOLATION_CODE;
+        riscv_raise_exception(env, RISCV_EXCP_SW_CHECK_FAULT, GETPC());
+    }
+}
+
+void helper_cfi_jalr(CPURISCVState *env, int elp)
+{
+    /*
+     * The translation routine doesn't know if forward CFI is enabled
+     * in the current processor mode or not. It's not worth burning a
+     * cflags bit to encode this, or tracking the current-mode-fcfi
+     * enable in a dedicated member of 'env'. Just come out to a helper
+     * for jump/call on a core with CFI.
+     */
+    if (cpu_get_fcfien(env)) {
+        env->elp = elp;
+    }
+}
+
+void helper_cfi_check_landing_pad(CPURISCVState *env, int lbl)
+{
+    if ((env->elp == LP_EXPECTED) && cpu_get_fcfien(env)) {
+        /*
+         * Check for the 20bit label match. We already checked 4 byte
+         * alignment in tcg
+         * High 20bits (b31:12) in x7/t2 hold label. We need drop bits
+         * greater than 31 and then shift 12 right
+         */
+        if (lbl && (lbl != ((env->gpr[xT2] & 0xFFFFFFFF) >> 12))) {
+            env->cfi_violation_code = RISCV_EXCP_SW_CHECK_FCFI_VIOLATION_CODE;
+            riscv_raise_exception(env, RISCV_EXCP_SW_CHECK_FAULT, GETPC());
+        }
+
+        env->elp = NO_LP_EXPECTED;
+    }
+}
+
 #ifndef CONFIG_USER_ONLY
 
 target_ulong helper_sret(CPURISCVState *env)

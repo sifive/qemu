@@ -520,6 +520,8 @@ FIELD(TB_FLAGS, AXL, 26, 2)
 
 /* Zisslpcfi needs a TB flag to track indirect branches */
 FIELD(TB_FLAGS, FCFI_LP_EXPECTED, 28, 1)
+FIELD(TB_FLAGS, SUM, 29, 1)
+FIELD(TB_FLAGS, BCFI_ENABLED, 30, 1)
 
 #ifdef TARGET_RISCV32
 #define riscv_cpu_mxl(env)  ((void)(env), MXL_RV32)

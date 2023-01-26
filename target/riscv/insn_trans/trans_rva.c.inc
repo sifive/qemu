@@ -18,6 +18,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "exec/memop.h"
 static bool gen_lr(DisasContext *ctx, arg_atomic *a, MemOp mop)
 {
     TCGv src1;
@@ -112,6 +113,26 @@ static bool trans_amoswap_w(DisasContext *ctx, arg_amoswap_w *a)
     return gen_amo(ctx, a, &tcg_gen_atomic_xchg_tl, (MO_ALIGN | MO_TESL));
 }
 
+static bool trans_ssamoswap_w(DisasContext *ctx, arg_amoswap_w *a)
+{
+    REQUIRE_EXT(ctx, RVA);
+    int ss_mmu_idx = 0;
+
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1, src2 = get_gpr(ctx, a->rs2, EXT_NONE);
+
+    decode_save_opc(ctx);
+    src1 = get_address(ctx, a->rs1, 0);
+    /* If user mode, then use regular RW memory */
+#ifndef CONFIG_USER_ONLY
+    /* Shadow stack access and thus index is SS TLB index */
+    ss_mmu_idx = get_ss_index(ctx);
+#endif
+    tcg_gen_atomic_xchg_tl(dest, src1, src2, ss_mmu_idx, (MO_ALIGN | MO_TESL));
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
+}
+
 static bool trans_amoadd_w(DisasContext *ctx, arg_amoadd_w *a)
 {
     REQUIRE_EXT(ctx, RVA);
@@ -174,8 +195,28 @@ static bool trans_sc_d(DisasContext *ctx, arg_sc_d *a)
 
 static bool trans_amoswap_d(DisasContext *ctx, arg_amoswap_d *a)
 {
-    REQUIRE_64BIT(ctx);
-    return gen_amo(ctx, a, &tcg_gen_atomic_xchg_tl, (MO_ALIGN | MO_TEUQ));
+    REQUIRE_EXT(ctx, RVA);
+    return gen_amo(ctx, a, &tcg_gen_atomic_xchg_tl, (MO_ALIGN | MO_TESQ));
+}
+
+static bool trans_ssamoswap_d(DisasContext *ctx, arg_amoswap_w *a)
+{
+    REQUIRE_EXT(ctx, RVA);
+    int ss_mmu_idx = 0;
+
+    TCGv dest = dest_gpr(ctx, a->rd);
+    TCGv src1, src2 = get_gpr(ctx, a->rs2, EXT_NONE);
+
+    decode_save_opc(ctx);
+    src1 = get_address(ctx, a->rs1, 0);
+    /* If user mode, then use regular RW memory */
+#ifndef CONFIG_USER_ONLY
+    /* Shadow stack access and thus index is SS TLB index */
+    ss_mmu_idx = get_ss_index(ctx);
+#endif
+    tcg_gen_atomic_xchg_tl(dest, src1, src2, ss_mmu_idx, (MO_ALIGN | MO_TESQ));
+    gen_set_gpr(ctx, a->rd, dest);
+    return true;
 }
 
 static bool trans_amoadd_d(DisasContext *ctx, arg_amoadd_d *a)

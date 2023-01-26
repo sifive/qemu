@@ -121,6 +121,10 @@ DEF_HELPER_2(cbo_clean_flush, void, env, tl)
 DEF_HELPER_2(cbo_inval, void, env, tl)
 DEF_HELPER_2(cbo_zero, void, env, tl)
 
+/* Forward CFI label checking */
+DEF_HELPER_2(cfi_jalr, void, env, int)
+DEF_HELPER_2(cfi_check_landing_pad, void, env, int)
+
 /* Special functions */
 DEF_HELPER_2(csrr, tl, env, int)
 DEF_HELPER_3(csrw, void, env, int, tl)
@@ -137,6 +141,8 @@ DEF_HELPER_1(tlb_flush_all, void, env)
 /* Native Debug */
 DEF_HELPER_1(itrigger_match, void, env)
 #endif
+/* helper for back cfi mismatch */
+DEF_HELPER_3(sschk_mismatch, void, env, tl, tl)
 
 /* Hypervisor functions */
 #ifndef CONFIG_USER_ONLY
