@@ -674,6 +674,12 @@ void riscv_cpu_set_virt_enabled(CPURISCVState *env, bool enable)
     }
 }
 
+bool riscv_cpu_two_stage_lookup(int mmu_idx)
+{
+    return (mmu_idx & TB_FLAGS_PRIV_HYP_ACCESS_MASK) &&
+           (mmu_idx != MMU_IDX_SS_ACCESS);
+}
+
 int riscv_cpu_claim_interrupts(RISCVCPU *cpu, uint64_t interrupts)
 {
     CPURISCVState *env = &cpu->env;
@@ -753,6 +759,38 @@ void riscv_cpu_set_mode(CPURISCVState *env, target_ulong newpriv)
      * preemptive context switch. As a result, do both.
      */
     env->load_res = -1;
+
+    if (cpu_get_bcfien(env) && (env->priv != env->ss_priv)) {
+        /*
+         * If backward CFI is enabled in the new privilege state, the
+         * shadow stack TLB needs to be flushed - unless the most recent
+         * use of the SS TLB was for the same privilege mode.
+         */
+        tlb_flush_by_mmuidx(env_cpu(env), 1 << MMU_IDX_SS_ACCESS);
+        /*
+         * Ignoring env->virt here since currently every time it flips,
+         * all TLBs are flushed anyway.
+         */
+        env->ss_priv = env->priv;
+    }
+}
+
+typedef enum {
+    SSTACK_NO,          /* Access is not for a shadow stack instruction */
+    SSTACK_YES,         /* Access is for a shadow stack instruction */
+    SSTACK_DC           /* Don't care about SS attribute in PMP */
+} SStackPmpMode;
+
+static bool legal_sstack_access(int access_type, bool sstack_inst,
+                                bool sstack_attribute)
+{
+    /*
+     * Read/write/execution permissions are checked as usual. Shadow
+     * stack enforcement is just that (1) instruction type must match
+     * the attribute unless (2) a non-SS load to an SS region.
+     */
+    return (sstack_inst == sstack_attribute) ||
+        ((access_type == MMU_DATA_LOAD) && sstack_attribute);
 }
 
 /*
@@ -769,7 +807,7 @@ void riscv_cpu_set_mode(CPURISCVState *env, target_ulong newpriv)
  */
 static int get_physical_address_pmp(CPURISCVState *env, int *prot, hwaddr addr,
                                     int size, MMUAccessType access_type,
-                                    int mode)
+                                    int mode, SStackPmpMode sstack)
 {
     pmp_priv_t pmp_priv;
     bool pmp_has_privs;
@@ -812,13 +850,16 @@ static int get_physical_address_pmp(CPURISCVState *env, int *prot, hwaddr addr,
  *               Second stage is used for hypervisor guest translation
  * @two_stage: Are we going to perform two stage translation
  * @is_debug: Is this access from a debugger or the monitor?
+ * @sstack: Is this access for a shadow stack? Passed by reference so
+            it can be forced to SSTACK_DC when the SS check is completed
+            based on a PTE - so the PMP SS attribute will be ignored.
  */
 static int get_physical_address(CPURISCVState *env, hwaddr *physical,
                                 int *ret_prot, vaddr addr,
                                 target_ulong *fault_pte_addr,
                                 int access_type, int mmu_idx,
                                 bool first_stage, bool two_stage,
-                                bool is_debug)
+                                bool is_debug, SStackPmpMode *sstack)
 {
     /*
      * NOTE: the env->pc value visible here will not be
@@ -831,6 +872,7 @@ static int get_physical_address(CPURISCVState *env, hwaddr *physical,
     bool use_background = false;
     hwaddr ppn;
     int napot_bits = 0;
+    bool is_sstack = (sstack != NULL) && (*sstack == SSTACK_YES);
     target_ulong napot_mask;
 
     /*
@@ -842,6 +884,10 @@ static int get_physical_address(CPURISCVState *env, hwaddr *physical,
      */
     if (!env->virt_enabled && two_stage) {
         use_background = true;
+    }
+
+    if (mmu_idx == MMU_IDX_SS_ACCESS) {
+        mode = env->priv;
     }
 
     if (mode == PRV_M || !riscv_cpu_cfg(env)->mmu) {
@@ -925,11 +971,11 @@ static int get_physical_address(CPURISCVState *env, hwaddr *physical,
     }
 
     bool pbmte = env->menvcfg & MENVCFG_PBMTE;
-    bool hade = env->menvcfg & MENVCFG_HADE;
+    bool adue = env->menvcfg & MENVCFG_ADUE;
 
     if (first_stage && two_stage && env->virt_enabled) {
         pbmte = pbmte && (env->henvcfg & HENVCFG_PBMTE);
-        hade = hade && (env->henvcfg & HENVCFG_HADE);
+        adue = adue && (env->henvcfg & HENVCFG_ADUE);
     }
 
     int ptshift = (levels - 1) * ptidxbits;
@@ -960,7 +1006,7 @@ restart:
             int vbase_ret = get_physical_address(env, &vbase, &vbase_prot,
                                                  base, NULL, MMU_DATA_LOAD,
                                                  MMUIdx_U, false, true,
-                                                 is_debug);
+                                                 is_debug, NULL);
 
             if (vbase_ret != TRANSLATE_SUCCESS) {
                 if (fault_pte_addr) {
@@ -977,7 +1023,7 @@ restart:
         int pmp_prot;
         int pmp_ret = get_physical_address_pmp(env, &pmp_prot, pte_addr,
                                                sizeof(target_ulong),
-                                               MMU_DATA_LOAD, PRV_S);
+                                               MMU_DATA_LOAD, PRV_S, SSTACK_NO);
         if (pmp_ret != TRANSLATE_SUCCESS) {
             return TRANSLATE_PMP_FAIL;
         }
@@ -1010,6 +1056,18 @@ restart:
             ppn = (pte & (target_ulong)PTE_PPN_MASK) >> PTE_PPN_SHIFT;
         }
 
+        /*
+         * When backward CFI is enabled, the R=0, W=1, X=0 reserved encoding
+         * is used to mark Shadow Stack (SS) pages. If back CFI enabled, allow
+         * normal loads on SS pages, regular stores raise store access fault
+         * and avoid hitting the reserved-encoding case. Only shadow stack
+         * stores are allowed on SS pages. Shadow stack loads and stores on
+         * regular memory (non-SS) raise load and store/AMO access fault.
+         * Second stage translations don't participate in Shadow Stack.
+         */
+        bool sstack_page = (cpu_get_bcfien(env) && first_stage &&
+                            ((pte & (PTE_R | PTE_W | PTE_X)) == PTE_W));
+
         if (!(pte & PTE_V)) {
             /* Invalid PTE */
             return TRANSLATE_FAIL;
@@ -1041,12 +1099,28 @@ restart:
     /* Check for reserved combinations of RWX flags. */
     switch (pte & (PTE_R | PTE_W | PTE_X)) {
     case PTE_W:
+    /* If shadow stack page, then only PTE_W is no more reserved  */
+        if (sstack_page) {
+            break;
+        }
     case PTE_W | PTE_X:
         return TRANSLATE_FAIL;
     }
 
+    /* Illegal combo of instruction type and page attribute */
+    if (!legal_sstack_access(access_type, is_sstack,
+                            sstack_page)) {
+        /* shadow stack instruction and RO page then it's a page fault */
+        if (is_sstack && ((pte & (PTE_R | PTE_W | PTE_X)) == PTE_R)) {
+                return TRANSLATE_FAIL;
+        }
+        /* In all other cases it's an access fault, so raise PMP_FAIL */
+        return TRANSLATE_PMP_FAIL;
+    }
+
     int prot = 0;
-    if (pte & PTE_R) {
+    /* If PTE has read bit in it or it's shadow stack page, then reads allowed */
+    if ((pte & PTE_R) || sstack_page) {
         prot |= PAGE_READ;
     }
     if (pte & PTE_W) {
@@ -1090,7 +1164,7 @@ restart:
 
     /* Page table updates need to be atomic with MTTCG enabled */
     if (updated_pte != pte && !is_debug) {
-        if (!hade) {
+        if (!adue) {
             return TRANSLATE_FAIL;
         }
 
@@ -1130,8 +1204,23 @@ restart:
         }
     }
 
-    /* For superpage mappings, make a fake leaf PTE for the TLB's benefit. */
+    if (sstack) {
+    /*
+    * Tell the caller to skip the SS bit in the PMP since we
+    * resolved the attributes via the page table.
+    */
+        *sstack = SSTACK_DC;
+    }
+
+    /* for superpage mappings, make a fake leaf PTE for the TLB's benefit. */
     target_ulong vpn = addr >> PGSHIFT;
+
+    if (cpu->cfg.ext_svnapot && (pte & PTE_N)) {
+        napot_bits = ctzl(ppn) + 1;
+        if ((i != (levels - 1)) || (napot_bits != 4)) {
+            return TRANSLATE_FAIL;
+        }
+    }
 
     if (riscv_cpu_cfg(env)->ext_svnapot && (pte & PTE_N)) {
         napot_bits = ctzl(ppn) + 1;
@@ -1224,13 +1313,13 @@ hwaddr riscv_cpu_get_phys_page_debug(CPUState *cs, vaddr addr)
     int mmu_idx = cpu_mmu_index(&cpu->env, false);
 
     if (get_physical_address(env, &phys_addr, &prot, addr, NULL, 0, mmu_idx,
-                             true, env->virt_enabled, true)) {
+                             true, env->virt_enabled, true, NULL)) {
         return -1;
     }
 
     if (env->virt_enabled) {
         if (get_physical_address(env, &phys_addr, &prot, phys_addr, NULL,
-                                 0, mmu_idx, false, true, true)) {
+                                 0, mmu_idx, false, true, true, NULL)) {
             return -1;
         }
     }
@@ -1323,6 +1412,8 @@ bool riscv_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
     bool two_stage_indirect_error = false;
     int ret = TRANSLATE_FAIL;
     int mode = mmu_idx;
+    bool sstack = (mmu_idx == MMU_IDX_SS_ACCESS);
+    SStackPmpMode ssmode = sstack ? SSTACK_YES : SSTACK_NO;
     /* default TLB page size */
     target_ulong tlb_size = TARGET_PAGE_SIZE;
 
@@ -1331,12 +1422,17 @@ bool riscv_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
     qemu_log_mask(CPU_LOG_MMU, "%s ad %" VADDR_PRIx " rw %d mmu_idx %d\n",
                   __func__, address, access_type, mmu_idx);
 
+    /* If shadow stack instruction initiated this access, treat it as store */
+    if (sstack) {
+        access_type = MMU_DATA_STORE;
+    }
+
     pmu_tlb_fill_incr_ctr(cpu, access_type);
     if (two_stage_lookup) {
         /* Two stage lookup */
         ret = get_physical_address(env, &pa, &prot, address,
                                    &env->guest_phys_fault_addr, access_type,
-                                   mmu_idx, true, true, false);
+                                   mmu_idx, true, true, false, &ssmode);
 
         /*
          * A G-stage exception may be triggered during two state lookup.
@@ -1359,7 +1455,7 @@ bool riscv_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
 
             ret = get_physical_address(env, &pa, &prot2, im_address, NULL,
                                        access_type, MMUIdx_U, false, true,
-                                       false);
+                                       false, NULL);
 
             qemu_log_mask(CPU_LOG_MMU,
                           "%s 2nd-stage address=%" VADDR_PRIx
@@ -1371,7 +1467,7 @@ bool riscv_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
 
             if (ret == TRANSLATE_SUCCESS) {
                 ret = get_physical_address_pmp(env, &prot_pmp, pa,
-                                               size, access_type, mode);
+                                               size, access_type, mode, SSTACK_NO);
                 tlb_size = pmp_get_tlb_size(env, pa);
 
                 qemu_log_mask(CPU_LOG_MMU,
@@ -1396,7 +1492,8 @@ bool riscv_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
     } else {
         /* Single stage lookup */
         ret = get_physical_address(env, &pa, &prot, address, NULL,
-                                   access_type, mmu_idx, true, false, false);
+                                   access_type, mmu_idx, true, false,
+                                   false, &ssmode);
 
         qemu_log_mask(CPU_LOG_MMU,
                       "%s address=%" VADDR_PRIx " ret %d physical "
@@ -1405,7 +1502,7 @@ bool riscv_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
 
         if (ret == TRANSLATE_SUCCESS) {
             ret = get_physical_address_pmp(env, &prot_pmp, pa,
-                                           size, access_type, mode);
+                                           size, access_type, mode, ssmode);
             tlb_size = pmp_get_tlb_size(env, pa);
 
             qemu_log_mask(CPU_LOG_MMU,

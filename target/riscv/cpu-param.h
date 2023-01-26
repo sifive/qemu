@@ -25,6 +25,7 @@
  *  - M mode 0b011
  *  - U mode HLV/HLVX/HSV 0b100
  *  - S mode HLV/HLVX/HSV 0b101
+ *  - BCFI shadow stack   0b111
  *  - M mode HLV/HLVX/HSV 0b111
  */
 
