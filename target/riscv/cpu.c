@@ -1015,6 +1015,7 @@ static void riscv_cpu_reset_hold(Object *obj, ResetType type)
 
     pmp_unlock_entries(env);
 #endif
+    env->elp = NO_LP_EXPECTED;
     env->xl = riscv_cpu_mxl(env);
     riscv_cpu_update_mask(env);
     cs->exception_index = RISCV_EXCP_NONE;
