@@ -32,6 +32,7 @@
 #include "cpu_bits.h"
 #include "debug.h"
 #include "tcg/oversized-guest.h"
+#include "pmp.h"
 
 int riscv_cpu_mmu_index(CPURISCVState *env, bool ifetch)
 {
@@ -62,8 +63,60 @@ int riscv_cpu_mmu_index(CPURISCVState *env, bool ifetch)
 #endif
 }
 
-void cpu_get_tb_cpu_state(CPURISCVState *env, vaddr *pc,
-                          uint64_t *cs_base, uint32_t *pflags)
+bool cpu_get_fcfien(CPURISCVState *env)
+{
+#ifdef CONFIG_USER_ONLY
+    return true;
+#else
+    /* no cfi extension, return false */
+    if (!env_archcpu(env)->cfg.ext_cfi_lp) {
+        return false;
+    }
+
+    switch (env->priv) {
+    case PRV_U:
+        return (env->senvcfg & MENVCFG_LPE) ? true : false;
+    case PRV_S:
+        if (env->virt_enabled) {
+            return (env->henvcfg & HENVCFG_LPE) ? true : false;
+        }
+        return (env->menvcfg & MENVCFG_LPE) ? true : false;
+    case PRV_M:
+        return (env->mseccfg & MSECCFG_MLPE) ? true : false;
+    default:
+        g_assert_not_reached();
+    }
+#endif
+}
+
+bool cpu_get_bcfien(CPURISCVState *env)
+{
+#ifdef CONFIG_USER_ONLY
+    return true;
+#else
+    /* no cfi extension, return false */
+    if (!env_archcpu(env)->cfg.ext_cfi_ss) {
+        return false;
+    }
+
+    switch (env->priv) {
+    case PRV_U:
+        return (env->senvcfg & SENVCFG_SSE) ? true : false;
+    case PRV_S:
+        if (env->virt_enabled) {
+            return (env->henvcfg & HENVCFG_SSE) ? true : false;
+        }
+        return (env->menvcfg & MENVCFG_SSE) ? true : false;
+    case PRV_M: /* M-mode shadow stack is always on if hart implements */
+        return true;
+    default:
+        g_assert_not_reached();
+    }
+#endif
+}
+
+void cpu_get_tb_cpu_state(CPURISCVState *env, target_ulong *pc,
+                          target_ulong *cs_base, uint32_t *pflags)
 {
     CPUState *cs = env_cpu(env);
     RISCVCPU *cpu = RISCV_CPU(cs);
