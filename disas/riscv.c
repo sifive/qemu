@@ -862,6 +862,14 @@ typedef enum {
     rv_op_fltq_q = 831,
     rv_op_fleq_h = 832,
     rv_op_fltq_h = 833,
+    rv_op_lpad = 834,
+    rv_op_sspush = 835,
+    rv_op_sspopchk = 836,
+    rv_op_ssrdp = 837,
+    rv_op_ssamoswap_w = 838,
+    rv_op_ssamoswap_d = 839,
+    rv_op_zimops_r = 840,
+    rv_op_zimops_rr = 841,
 } rv_op;
 
 /* register names */
@@ -2008,6 +2016,14 @@ const rv_opcode_data rvi_opcode_data[] = {
     { "fltq.q", rv_codec_r, rv_fmt_rd_frs1_frs2, NULL, 0, 0, 0 },
     { "fleq.h", rv_codec_r, rv_fmt_rd_frs1_frs2, NULL, 0, 0, 0 },
     { "fltq.h", rv_codec_r, rv_fmt_rd_frs1_frs2, NULL, 0, 0, 0 },
+    { "lpad", rv_codec_lp, rv_fmt_imm, NULL, 0, 0, 0 },
+    { "sspush", rv_codec_r, rv_fmt_rs2, NULL, 0, 0, 0 },
+    { "sspopchk", rv_codec_r, rv_fmt_rs1, NULL, 0, 0, 0 },
+    { "ssrdp", rv_codec_r, rv_fmt_rd, NULL, 0, 0, 0 },
+    { "ssamoswap.w", rv_codec_r_a, rv_fmt_aqrl_rd_rs2_rs1, NULL, 0, 0, 0 },
+    { "ssamoswap.d", rv_codec_r_a, rv_fmt_aqrl_rd_rs2_rs1, NULL, 0, 0, 0 },
+    { "zimops_r", rv_codec_r, rv_fmt_rd, NULL, 0, 0, 0 },
+    { "zimops_rr", rv_codec_r, rv_fmt_rd, NULL, 0, 0, 0 },
 };
 
 /* CSR names */
@@ -2025,6 +2041,7 @@ static const char *csr_name(int csrno)
     case 0x0009: return "vxsat";
     case 0x000a: return "vxrm";
     case 0x000f: return "vcsr";
+    case 0x0011: return "ssp";
     case 0x0015: return "seed";
     case 0x0017: return "jvt";
     case 0x0040: return "uscratch";
@@ -2631,7 +2648,13 @@ static void decode_inst_opcode(rv_decode *dec, rv_isa isa)
             case 7: op = rv_op_andi; break;
             }
             break;
-        case 5: op = rv_op_auipc; break;
+        case 5:
+            op = rv_op_auipc;
+            /* if rd is 0, then it's lpad */
+            if (((inst >> 7) & 0b11111) == 0b00000) {
+                op = rv_op_lpad;
+            }
+            break;
         case 6:
             switch ((inst >> 12) & 0b111) {
             case 0: op = rv_op_addiw; break;
@@ -2759,6 +2782,8 @@ static void decode_inst_opcode(rv_decode *dec, rv_isa isa)
             case 34: op = rv_op_amoxor_w; break;
             case 35: op = rv_op_amoxor_d; break;
             case 36: op = rv_op_amoxor_q; break;
+            case 42: op = rv_op_ssamoswap_w; break;
+            case 43: op = rv_op_ssamoswap_d; break;
             case 66: op = rv_op_amoor_w; break;
             case 67: op = rv_op_amoor_d; break;
             case 68: op = rv_op_amoor_q; break;
@@ -3681,6 +3706,31 @@ static void decode_inst_opcode(rv_decode *dec, rv_isa isa)
             case 1: op = rv_op_csrrw; break;
             case 2: op = rv_op_csrrs; break;
             case 3: op = rv_op_csrrc; break;
+            case 4:
+                /* if matches mop_r mask */
+                if ((((inst >> 20) & 0b100000011100) ==
+                        0b100000011100)) {
+                    op = rv_op_zimops_r;
+                    switch (((inst >> 20) & 3) |
+                            (((inst >> 26) & 3) << 2) |
+                            (((inst >> 30) & 1) << 4)) {
+                    case 28:
+                        op = rv_op_sspopchk;
+                        if (((inst >> 12) & 0b11111) == 0b00000) {
+                            op = rv_op_ssrdp;
+                        }
+                        break;
+                    }
+                } else if ((((inst >> 25) & 0b1000001) ==
+                        0b1000001)) {
+                    op = rv_op_zimops_rr;
+                    switch (((inst >> 26) & 3) |
+                            (((inst >> 30) & 1) << 2)) {
+                    case 7:
+                        op = rv_op_sspush; break;
+                    }
+                }
+                break;
             case 5: op = rv_op_csrrwi; break;
             case 6: op = rv_op_csrrsi; break;
             case 7: op = rv_op_csrrci; break;
@@ -4086,6 +4136,17 @@ static uint32_t operand_tbl_index(rv_inst inst)
     return ((inst << 54) >> 56);
 }
 
+static uint32_t operand_lpl(rv_inst inst)
+{
+    uint32_t label_width = 9;
+
+    if ((inst >> 26) & 0b11) {
+        label_width = 8;
+    }
+
+    return (inst >> 15) & ((1 << label_width) - 1);
+}
+
 /* decode operands */
 
 static void decode_inst_operands(rv_decode *dec, rv_isa isa)
@@ -4466,6 +4527,9 @@ static void decode_inst_operands(rv_decode *dec, rv_isa isa)
         dec->rs1 = operand_rs1(inst);
         dec->imm = sextract32(operand_rs2(inst), 0, 5);
         dec->imm1 = operand_imm2(inst);
+        break;
+    case rv_codec_lp:
+        dec->imm = operand_lpl(inst);
         break;
     };
 }
