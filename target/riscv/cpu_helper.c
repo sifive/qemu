@@ -168,10 +168,17 @@ void cpu_get_tb_cpu_state(CPURISCVState *env, vaddr *pc,
                            env->elp != NO_LP_EXPECTED);
     }
 
+    if (cpu_get_bcfien(env)) {
+        flags = FIELD_DP32(flags, TB_FLAGS, BCFI_ENABLED, 1);
+    }
+
 #ifdef CONFIG_USER_ONLY
     fs = EXT_STATUS_DIRTY;
     vs = EXT_STATUS_DIRTY;
 #else
+   flags = FIELD_DP32(flags, TB_FLAGS, SUM,
+                      ((env->mstatus & MSTATUS_SUM) == MSTATUS_SUM));
+
     flags = FIELD_DP32(flags, TB_FLAGS, PRIV, env->priv);
 
     flags |= riscv_env_mmu_index(env, 0);

@@ -118,6 +118,7 @@ typedef struct DisasContext {
     bool frm_valid;
     bool insn_start_updated;
     const GPtrArray *decoders;
+    bool sum;
     /* CFI extension */
     bool bcfi_enabled;
     bool fcfi_enabled;
@@ -1127,6 +1128,28 @@ static uint32_t opcode_at(DisasContextBase *dcbase, target_ulong pc)
     return translator_ldl(env, &ctx->base, pc);
 }
 
+#ifndef CONFIG_USER_ONLY
+static unsigned int get_ss_index(DisasContext *ctx)
+{
+    int ss_mmu_idx = MMU_IDX_SS_ACCESS;
+
+    /*
+     * If priv mode is S then a separate index for supervisor
+     * shadow stack accesses
+     */
+    if (ctx->priv == PRV_S) {
+        ss_mmu_idx |= MMUIdx_S;
+    }
+
+    if (ctx->sum) {
+        ss_mmu_idx &= ~(MMUIdx_S);
+        ss_mmu_idx |= MMUIdx_S_SUM;
+    }
+
+    return ss_mmu_idx;
+}
+#endif
+
 /* Include insn module translation function */
 #include "insn_trans/trans_rvi.c.inc"
 #include "insn_trans/trans_rvm.c.inc"
@@ -1157,6 +1180,9 @@ static uint32_t opcode_at(DisasContextBase *dcbase, target_ulong pc)
 #include "decode-insn16.c.inc"
 #include "insn_trans/trans_rvzce.c.inc"
 #include "insn_trans/trans_rvzcmop.c.inc"
+
+/* Include cfi implementations */
+#include "insn_trans/trans_zisslpcfi.c.inc"
 
 /* Include decoders for factored-out extensions */
 #include "decode-XVentanaCondOps.c.inc"
@@ -1244,12 +1270,14 @@ static void riscv_tr_init_disas_context(DisasContextBase *dcbase, CPUState *cs)
     ctx->pm_base_enabled = FIELD_EX32(tb_flags, TB_FLAGS, PM_BASE_ENABLED);
     ctx->ztso = cpu->cfg.ext_ztso;
     ctx->itrigger = FIELD_EX32(tb_flags, TB_FLAGS, ITRIGGER);
-    ctx->bcfi_enabled = cpu_get_bcfien(env);
+    ctx->bcfi_enabled = cpu_get_bcfien(env) &&
+                        FIELD_EX32(tb_flags, TB_FLAGS, BCFI_ENABLED);
     ctx->fcfi_enabled = cpu_get_fcfien(env);
     ctx->fcfi_lp_expected = FIELD_EX32(tb_flags, TB_FLAGS, FCFI_LP_EXPECTED);
     ctx->zero = tcg_constant_tl(0);
     ctx->virt_inst_excp = false;
     ctx->decoders = cpu->decoders;
+    ctx->sum = FIELD_EX32(tb_flags, TB_FLAGS, SUM);
 }
 
 static void riscv_tr_tb_start(DisasContextBase *db, CPUState *cpu)

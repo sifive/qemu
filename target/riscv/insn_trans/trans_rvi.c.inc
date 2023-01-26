@@ -36,6 +36,44 @@ static bool trans_lui(DisasContext *ctx, arg_lui *a)
     return true;
 }
 
+static bool trans_lpad(DisasContext *ctx, arg_lpad *a)
+{
+    /* cfi only supported on 32bit and 64bit */
+    if (get_xl(ctx) != MXL_RV32 && get_xl(ctx) != MXL_RV64) {
+        return false;
+    }
+
+    /*
+     * If this is the first instruction of the TB, let the translator
+     * know the landing pad requirement was satisfied. No need to bother
+     * checking for CFI feature or enablement.
+     */
+
+    if (ctx->base.pc_next == ctx->base.pc_first) {
+        ctx->fcfi_lp_expected = false;
+        /* PC must be 4 byte aligned */
+        if (ctx->fcfi_enabled && ((ctx->base.pc_next) & 0x3)) {
+            /*
+             * misaligned, according to spec we should raise sw check exception
+             * instead of mis-aligned
+             */
+            tcg_gen_st_tl(
+                    tcg_constant_tl(RISCV_EXCP_SW_CHECK_FCFI_VIOLATION_CODE),
+                    tcg_env, offsetof(CPURISCVState, cfi_violation_code));
+            generate_exception(ctx, RISCV_EXCP_SW_CHECK);
+            return true;
+        }
+}
+
+    /* forward cfi not enabled, should go to trans_zimops. return false */
+    if (!ctx->fcfi_enabled) {
+        return false;
+    }
+
+    gen_helper_cfi_check_landing_pad(tcg_env, tcg_constant_i32(a->imm_cfi20));
+    return true;
+}
+
 static bool trans_auipc(DisasContext *ctx, arg_auipc *a)
 {
     TCGv target_pc = dest_gpr(ctx, a->rd);
@@ -75,6 +113,19 @@ static bool trans_jalr(DisasContext *ctx, arg_jalr *a)
     gen_set_gpr(ctx, a->rd, succ_pc);
 
     tcg_gen_mov_tl(cpu_pc, target_pc);
+    if (ctx->cfg_ptr->ext_cfi_lp) {
+        /*
+         * Rely on a helper to check the forward CFI enable for the
+         * current process mode. The alternatives would be (1) include
+         * "fcfi enabled" in the cflags or (2) maintain a "fcfi
+         * currently enabled" in tcg_env and emit TCG code to access
+         * and test it.
+         */
+        if (a->rs1 != xRA && a->rs1 != xT0 && a->rs1 != xT2) {
+            gen_helper_cfi_jalr(tcg_env, tcg_constant_i32(LP_EXPECTED));
+        }
+    }
+
     lookup_and_goto_ptr(ctx);
 
     if (misaligned) {
