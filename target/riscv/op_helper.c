@@ -311,6 +311,12 @@ target_ulong helper_sret(CPURISCVState *env)
         riscv_cpu_set_virt_enabled(env, prev_virt);
     }
 
+    /* If forward cfi enabled for target, restore elp status */
+    if (cpu_get_fcfien(env)) {
+        env->elp = get_field(env->mstatus, MSTATUS_SPELP);
+        env->mstatus = set_field(env->mstatus, MSTATUS_SPELP, 0);
+    }
+
     riscv_cpu_set_mode(env, prev_priv);
 
     return retpc;
@@ -355,6 +361,12 @@ target_ulong helper_mret(CPURISCVState *env)
         }
 
         riscv_cpu_set_virt_enabled(env, prev_virt);
+    }
+
+    /* If forward cfi enabled for target, restore elp status */
+    if (cpu_get_fcfien(env)) {
+        env->elp = get_field(env->mstatus, MSTATUS_MPELP);
+        env->mstatus = set_field(env->mstatus, MSTATUS_MPELP, 0);
     }
 
     return retpc;
