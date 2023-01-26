@@ -30,12 +30,16 @@
  *  - U+2STAGE          0b100
  *  - S+2STAGE          0b101
  *  - S+SUM+2STAGE      0b110
+ *  - Shadow stack      0b1000
+ *  - Shadow stack+S    0b1001
+ *  - Shadow stack+SUM  0b1010
  */
 #define MMUIdx_U            0
 #define MMUIdx_S            1
 #define MMUIdx_S_SUM        2
 #define MMUIdx_M            3
 #define MMU_2STAGE_BIT      (1 << 2)
+#define MMU_IDX_SS_ACCESS   (1 << 3)
 
 static inline int mmuidx_priv(int mmu_idx)
 {

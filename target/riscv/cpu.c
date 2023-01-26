@@ -1014,6 +1014,8 @@ static void riscv_cpu_reset_hold(Object *obj, ResetType type)
     }
 
     pmp_unlock_entries(env);
+    /* Initialize ss_priv to current priv. */
+    env->ss_priv = env->priv;
 #endif
     env->elp = NO_LP_EXPECTED;
     env->xl = riscv_cpu_mxl(env);
