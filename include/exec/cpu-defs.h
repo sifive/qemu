@@ -98,6 +98,8 @@
  * also why we don't want to combine the two structs.
  */
 typedef struct CPUTLBEntryFull {
+    MemoryRegionSection *section;
+
     /*
      * @xlat_section contains:
      *  - in the lower TARGET_PAGE_BITS, a physical section number

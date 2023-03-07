@@ -1252,7 +1252,6 @@ void tlb_set_page_full(CPUState *cpu, int mmu_idx,
         tlb_n_used_entries_dec(env, mmu_idx);
     }
 
-    /* refill the tlb */
     /*
      * At this point iotlb contains a physical section number in the lower
      * TARGET_PAGE_BITS, and either
@@ -1268,6 +1267,7 @@ void tlb_set_page_full(CPUState *cpu, int mmu_idx,
     desc->fulltlb[index] = *full;
     full = &desc->fulltlb[index];
     full->xlat_section = iotlb - addr_page;
+    full->section = section;
     full->phys_addr = paddr_page;
 
     /* Now calculate the new entry */
@@ -1389,7 +1389,7 @@ static uint64_t io_readx(CPUArchState *env, CPUTLBEntryFull *full,
     uint64_t val;
     MemTxResult r;
 
-    section = iotlb_to_section(cpu, full->xlat_section, full->attrs);
+    section = full->section;
     mr = section->mr;
     mr_offset = (full->xlat_section & TARGET_PAGE_MASK) + addr;
     cpu->mem_io_pc = retaddr;
@@ -1429,7 +1429,7 @@ static void io_writex(CPUArchState *env, CPUTLBEntryFull *full,
     MemoryRegion *mr;
     MemTxResult r;
 
-    section = iotlb_to_section(cpu, full->xlat_section, full->attrs);
+    section = full->section;
     mr = section->mr;
     mr_offset = (full->xlat_section & TARGET_PAGE_MASK) + addr;
     if (!cpu->can_do_io) {
@@ -1747,8 +1747,7 @@ bool tlb_plugin_lookup(CPUState *cpu, vaddr addr, int mmu_idx,
             CPUTLBEntryFull *full;
             full = &env_tlb(env)->d[mmu_idx].fulltlb[index];
             data->is_io = true;
-            data->v.io.section =
-                iotlb_to_section(cpu, full->xlat_section, full->attrs);
+            data->v.io.section = full->section;
             data->v.io.offset = (full->xlat_section & TARGET_PAGE_MASK) + addr;
         } else {
             data->is_io = false;
