@@ -2280,7 +2280,8 @@ static RISCVException write_mstateen(CPURISCVState *env, int csrno,
 static RISCVException write_mstateen0(CPURISCVState *env, int csrno,
                                       target_ulong new_val)
 {
-    uint64_t wr_mask = SMSTATEEN_STATEEN | SMSTATEEN0_HSENVCFG;
+    uint64_t wr_mask = SMSTATEEN_STATEEN | SMSTATEEN0_HSENVCFG |
+                       SMSTATEEN0_HSCONTXT;
     if (!riscv_has_ext(env, RVF)) {
         wr_mask |= SMSTATEEN0_FCSR;
     }
@@ -2318,7 +2319,8 @@ static RISCVException write_mstateenh(CPURISCVState *env, int csrno,
 static RISCVException write_mstateen0h(CPURISCVState *env, int csrno,
                                        target_ulong new_val)
 {
-    uint64_t wr_mask = SMSTATEEN_STATEEN | SMSTATEEN0_HSENVCFG;
+    uint64_t wr_mask = SMSTATEEN_STATEEN | SMSTATEEN0_HSENVCFG |
+                       SMSTATEEN0_HSCONTXT;
 
     return write_mstateenh(env, csrno, wr_mask, new_val);
 }
@@ -2355,7 +2357,8 @@ static RISCVException write_hstateen(CPURISCVState *env, int csrno,
 static RISCVException write_hstateen0(CPURISCVState *env, int csrno,
                                       target_ulong new_val)
 {
-    uint64_t wr_mask = SMSTATEEN_STATEEN | SMSTATEEN0_HSENVCFG;
+    uint64_t wr_mask = SMSTATEEN_STATEEN | SMSTATEEN0_HSENVCFG |
+                       SMSTATEEN0_HSCONTXT;
 
     if (!riscv_has_ext(env, RVF)) {
         wr_mask |= SMSTATEEN0_FCSR;
@@ -2398,7 +2401,8 @@ static RISCVException write_hstateenh(CPURISCVState *env, int csrno,
 static RISCVException write_hstateen0h(CPURISCVState *env, int csrno,
                                        target_ulong new_val)
 {
-    uint64_t wr_mask = SMSTATEEN_STATEEN | SMSTATEEN0_HSENVCFG;
+    uint64_t wr_mask = SMSTATEEN_STATEEN | SMSTATEEN0_HSENVCFG |
+                       SMSTATEEN0_HSCONTXT;
 
     return write_hstateenh(env, csrno, wr_mask, new_val);
 }
@@ -2445,7 +2449,8 @@ static RISCVException write_sstateen(CPURISCVState *env, int csrno,
 static RISCVException write_sstateen0(CPURISCVState *env, int csrno,
                                       target_ulong new_val)
 {
-    uint64_t wr_mask = SMSTATEEN_STATEEN | SMSTATEEN0_HSENVCFG;
+    uint64_t wr_mask = SMSTATEEN_STATEEN | SMSTATEEN0_HSENVCFG |
+                       SMSTATEEN0_HSCONTXT;
 
     if (!riscv_has_ext(env, RVF)) {
         wr_mask |= SMSTATEEN0_FCSR;
@@ -4299,6 +4304,13 @@ static RISCVException rmw_scontext(CPURISCVState *env, int csrno,
                                    target_ulong *ret_val,
                                    target_ulong new_val, target_ulong wr_mask)
 {
+    RISCVException ret;
+
+    ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
+    if (ret != RISCV_EXCP_NONE) {
+        return ret;
+    }
+
     if (ret_val) {
         *ret_val = env->scontext;
     }
@@ -4317,6 +4329,13 @@ static RISCVException rmw_hcontext(CPURISCVState *env, int csrno,
                                    target_ulong *ret_val,
                                    target_ulong new_val, target_ulong wr_mask)
 {
+    RISCVException ret;
+
+    ret = smstateen_acc_ok(env, 0, SMSTATEEN0_HSCONTXT);
+    if (ret != RISCV_EXCP_NONE) {
+        return ret;
+    }
+
     return rmw_mcontext(env, csrno, ret_val, new_val, wr_mask);
 }
 #endif
