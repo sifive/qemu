@@ -232,7 +232,7 @@ bool sparc_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
                       "Translate at %" VADDR_PRIx " -> "
                       TARGET_FMT_plx ", vaddr " TARGET_FMT_lx "\n",
                       address, paddr, vaddr);
-        tlb_set_page(cs, vaddr, paddr, prot, mmu_idx, page_size);
+        tlb_set_page(cs, vaddr, paddr, prot, access_type, mmu_idx, page_size);
         return true;
     }
 
@@ -248,7 +248,8 @@ bool sparc_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
            neverland. Fake/overridden mappings will be flushed when
            switching to normal mode. */
         prot = PAGE_READ | PAGE_WRITE | PAGE_EXEC;
-        tlb_set_page(cs, vaddr, paddr, prot, mmu_idx, TARGET_PAGE_SIZE);
+        tlb_set_page(cs, vaddr, paddr, prot, access_type, mmu_idx,
+                     TARGET_PAGE_SIZE);
         return true;
     } else {
         if (access_type == MMU_INST_FETCH) {
@@ -785,8 +786,8 @@ bool sparc_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
                                    env->dmmu.mmu_primary_context,
                                    env->dmmu.mmu_secondary_context);
 
-        tlb_set_page_with_attrs(cs, vaddr, paddr, attrs, prot, mmu_idx,
-                                page_size);
+        tlb_set_page_with_attrs(cs, vaddr, paddr, attrs, prot, access_type,
+                                mmu_idx, page_size);
         return true;
     }
     if (probe) {
