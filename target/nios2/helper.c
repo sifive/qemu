@@ -310,7 +310,7 @@ bool nios2_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
         /* No MMU */
         address &= TARGET_PAGE_MASK;
         tlb_set_page(cs, address, address, PAGE_BITS,
-                     mmu_idx, TARGET_PAGE_SIZE);
+                     access_type, mmu_idx, TARGET_PAGE_SIZE);
         return true;
     }
 
@@ -319,7 +319,7 @@ bool nios2_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
             /* Kernel physical page - TLB bypassed */
             address &= TARGET_PAGE_MASK;
             tlb_set_page(cs, address, address, PAGE_BITS,
-                         mmu_idx, TARGET_PAGE_SIZE);
+                         access_type, mmu_idx, TARGET_PAGE_SIZE);
             return true;
         }
     } else {
@@ -345,7 +345,7 @@ bool nios2_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
             ((access_type == MMU_DATA_STORE) && (lu.prot & PAGE_WRITE)) ||
             ((access_type == MMU_INST_FETCH) && (lu.prot & PAGE_EXEC))) {
             tlb_set_page(cs, vaddr, paddr, lu.prot,
-                         mmu_idx, TARGET_PAGE_SIZE);
+                         access_type, mmu_idx, TARGET_PAGE_SIZE);
             return true;
         }
 
