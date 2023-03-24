@@ -4290,7 +4290,7 @@ static RISCVException rmw_mcontext(CPURISCVState *env, int csrno,
         *ret_val = env->mcontext;
     }
 
-    env->mcontext = new_val & wr_mask;
+    env->mcontext = (env->mcontext & ~wr_mask) | (new_val & wr_mask);
 
     return RISCV_EXCP_NONE;
 }
@@ -4303,7 +4303,7 @@ static RISCVException rmw_scontext(CPURISCVState *env, int csrno,
         *ret_val = env->scontext;
     }
 
-    env->scontext = new_val & wr_mask;
+    env->scontext = (env->scontext & ~wr_mask) | (new_val & wr_mask);
 
     return RISCV_EXCP_NONE;
 }
