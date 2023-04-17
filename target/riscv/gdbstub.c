@@ -280,6 +280,8 @@ static int riscv_gen_dynamic_csr_xml(CPUState *cs, int base_reg)
     int bitsize = 16 << env->misa_mxl_max;
     int i;
 
+    cpu->csr_base_reg = base_reg;
+
     /* Until gdb knows about 128-bit registers */
     if (bitsize > 64) {
         bitsize = 64;
@@ -406,4 +408,15 @@ void riscv_cpu_register_gdb_regs_for_features(CPUState *cs)
     gdb_register_coprocessor(cs, riscv_gdb_get_csr, riscv_gdb_set_csr,
                              riscv_gen_dynamic_csr_xml(cs, cs->gdb_num_regs),
                              "riscv-csr.xml", 0);
+}
+
+void riscv_refresh_dynamic_csr_xml(CPUState *cs)
+{
+    RISCVCPU *cpu = RISCV_CPU(cs);
+    if (cpu->dyn_csr_xml) {
+        g_free(cpu->dyn_csr_xml);
+        riscv_gen_dynamic_csr_xml(cs, cpu->csr_base_reg);
+        return;
+    }
+    g_assert_not_reached();
 }

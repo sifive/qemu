@@ -498,6 +498,7 @@ struct ArchCPU {
     CPURISCVState env;
 
     char *dyn_csr_xml;
+    int csr_base_reg;
     char *dyn_vreg_xml;
 
     /* Configuration Settings */
@@ -787,6 +788,7 @@ extern riscv_csr_operations csr_ops[CSR_TABLE_SIZE];
 void riscv_get_csr_ops(int csrno, riscv_csr_operations *ops);
 void riscv_set_csr_ops(int csrno, riscv_csr_operations *ops);
 
+void riscv_refresh_dynamic_csr_xml(CPUState *cs);
 void riscv_cpu_register_gdb_regs_for_features(CPUState *cs);
 
 #endif /* RISCV_CPU_H */
