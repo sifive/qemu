@@ -224,6 +224,7 @@ static int riscv_gen_dynamic_csr_xml(CPUState *cs, int base_reg)
 #if !defined(CONFIG_USER_ONLY)
     env->debugger = true;
 #endif
+    cpu->csr_base_reg = base_reg;
 
     /* Until gdb knows about 128-bit registers */
     if (bitsize > 64) {
@@ -348,4 +349,15 @@ void riscv_cpu_register_gdb_regs_for_features(CPUState *cs)
                                  riscv_gen_dynamic_csr_xml(cs, base_reg),
                                  "riscv-csr.xml", 0);
     }
+}
+
+void riscv_refresh_dynamic_csr_xml(CPUState *cs)
+{
+    RISCVCPU *cpu = RISCV_CPU(cs);
+    if (cpu->dyn_csr_xml) {
+        g_free(cpu->dyn_csr_xml);
+        riscv_gen_dynamic_csr_xml(cs, cpu->csr_base_reg);
+        return;
+    }
+    g_assert_not_reached();
 }

@@ -392,6 +392,7 @@ struct ArchCPU {
     CPURISCVState env;
 
     char *dyn_csr_xml;
+    int csr_base_reg;
     char *dyn_vreg_xml;
 
     /* Configuration Settings */
@@ -713,6 +714,7 @@ extern const bool valid_vm_1_10_32[], valid_vm_1_10_64[];
 void riscv_get_csr_ops(int csrno, riscv_csr_operations *ops);
 void riscv_set_csr_ops(int csrno, riscv_csr_operations *ops);
 
+void riscv_refresh_dynamic_csr_xml(CPUState *cs);
 void riscv_cpu_register_gdb_regs_for_features(CPUState *cs);
 
 uint8_t satp_mode_max_from_map(uint32_t map);
