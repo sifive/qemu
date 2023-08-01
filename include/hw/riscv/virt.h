@@ -60,6 +60,7 @@ struct RISCVVirtState {
     char *oem_table_id;
     OnOffAuto acpi;
     const MemMapEntry *memmap;
+    bool secure;
 };
 
 enum {
@@ -82,7 +83,10 @@ enum {
     VIRT_PCIE_MMIO,
     VIRT_PCIE_PIO,
     VIRT_PLATFORM_BUS,
-    VIRT_PCIE_ECAM
+    VIRT_PCIE_ECAM,
+    VIRT_WGC_DRAM,
+    VIRT_WGC_FLASH,
+    VIRT_WGC_UART
 };
 
 enum {
@@ -92,12 +96,15 @@ enum {
     VIRTIO_COUNT = 8,
     PCIE_IRQ = 0x20, /* 32 to 35 */
     VIRT_PLATFORM_BUS_IRQ = 64, /* 64 to 95 */
+    VIRT_WGC_DRAM_IRQ = 96, /* 96 to 127 */
+    VIRT_WGC_FLASH_IRQ = 97,
+    VIRT_WGC_UART_IRQ = 98,
 };
 
 #define VIRT_PLATFORM_BUS_NUM_IRQS 32
 
 #define VIRT_IRQCHIP_NUM_MSIS 255
-#define VIRT_IRQCHIP_NUM_SOURCES 96
+#define VIRT_IRQCHIP_NUM_SOURCES 128
 #define VIRT_IRQCHIP_NUM_PRIO_BITS 3
 #define VIRT_IRQCHIP_MAX_GUESTS_BITS 3
 #define VIRT_IRQCHIP_MAX_GUESTS ((1U << VIRT_IRQCHIP_MAX_GUESTS_BITS) - 1U)
@@ -127,4 +134,11 @@ enum {
 
 bool virt_is_acpi_enabled(RISCVVirtState *s);
 void virt_acpi_setup(RISCVVirtState *vms);
+
+/* WorldGuard */
+#define VIRT_WG_NWORLDS         4
+#define VIRT_WG_TRUSTEDWID      3
+#define VIRT_WG_HWBYPASS        true
+#define VIRT_WG_TZCOMPAT        false
+
 #endif
