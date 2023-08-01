@@ -56,6 +56,7 @@ struct RISCVVirtState {
     bool have_aclint;
     RISCVVirtAIAType aia_type;
     int aia_guests;
+    bool secure;
 };
 
 enum {
@@ -78,7 +79,10 @@ enum {
     VIRT_PCIE_MMIO,
     VIRT_PCIE_PIO,
     VIRT_PLATFORM_BUS,
-    VIRT_PCIE_ECAM
+    VIRT_PCIE_ECAM,
+    VIRT_WGC_DRAM,
+    VIRT_WGC_FLASH,
+    VIRT_WGC_UART
 };
 
 enum {
@@ -88,7 +92,10 @@ enum {
     VIRTIO_COUNT = 8,
     PCIE_IRQ = 0x20, /* 32 to 35 */
     VIRT_PLATFORM_BUS_IRQ = 64, /* 64 to 96 */
-    VIRTIO_NDEV = 96 /* Arbitrary maximum number of interrupts */
+    VIRT_WGC_DRAM_IRQ = 97, /* 97 to 127 */
+    VIRT_WGC_FLASH_IRQ = 98,
+    VIRT_WGC_UART_IRQ = 99,
+    VIRTIO_NDEV = 128 /* Arbitrary maximum number of interrupts */
 };
 
 #define VIRT_PLATFORM_BUS_NUM_IRQS 32
@@ -122,5 +129,11 @@ enum {
                                  1 + FDT_PLIC_INT_CELLS)
 #define FDT_APLIC_INT_MAP_WIDTH (FDT_PCI_ADDR_CELLS + FDT_PCI_INT_CELLS + \
                                  1 + FDT_APLIC_INT_CELLS)
+
+/* WorldGuard */
+#define VIRT_WG_NWORLDS         4
+#define VIRT_WG_TRUSTEDWID      3
+#define VIRT_WG_HWBYPASS        true
+#define VIRT_WG_TZCOMPAT        false
 
 #endif
