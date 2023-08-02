@@ -57,6 +57,11 @@ typedef struct MemTxAttrs {
     unsigned int target_tlb_bit0 : 1;
     unsigned int target_tlb_bit1 : 1;
     unsigned int target_tlb_bit2 : 1;
+
+    /*
+     * RISC-V WorldGuard: the 5-bit WID of memory access.
+     */
+    uint8_t world_id;
 } MemTxAttrs;
 
 /* Bus masters which don't specify any attributes will get this,
