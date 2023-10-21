@@ -450,6 +450,7 @@ bool riscv_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
                         bool probe, uintptr_t retaddr);
 char *riscv_isa_string(RISCVCPU *cpu);
 void riscv_cpu_list(void);
+void riscv_cpu_validate_set_extensions(RISCVCPU *cpu, Error **errp);
 
 #define cpu_list riscv_cpu_list
 #define cpu_mmu_index riscv_cpu_mmu_index
@@ -493,7 +494,7 @@ void riscv_cpu_set_fflags(CPURISCVState *env, target_ulong);
 #define TB_FLAGS_MSTATUS_FS MSTATUS_FS
 #define TB_FLAGS_MSTATUS_VS MSTATUS_VS
 /* TLB MMU index for shadow stack accesses */
-#define MMU_IDX_SS_ACCESS    6
+#define MMU_IDX_SS_ACCESS    7
 
 #include "exec/cpu-all.h"
 
@@ -521,7 +522,7 @@ FIELD(TB_FLAGS, PRIV, 24, 2)
 FIELD(TB_FLAGS, AXL, 26, 2)
 
 /* Zisslpcfi needs a TB flag to track indirect branches */
-FIELD(TB_FLAGS, FCFI_LP_EXPECTED, 27, 1)
+FIELD(TB_FLAGS, FCFI_LP_EXPECTED, 28, 1)
 
 #ifdef TARGET_RISCV32
 #define riscv_cpu_mxl(env)  ((void)(env), MXL_RV32)

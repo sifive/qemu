@@ -154,7 +154,7 @@ void cpu_get_tb_cpu_state(CPURISCVState *env, target_ulong *pc,
         flags = FIELD_DP32(flags, TB_FLAGS, VILL, 1);
     }
 
-    if (cpu->cfg.ext_cfi) {
+    if (cpu_get_fcfien(env)) {
         /*
          * For Forward CFI, only the expectation of a lpcll at
          * the start of the block is tracked (which can only happen
@@ -587,7 +587,6 @@ void riscv_cpu_swap_hypervisor_regs(CPURISCVState *env)
         get_field(env->henvcfg, HENVCFG_LPE)) {
         mstatus_mask |= SSTATUS_SPELP;
     }
-    bool current_virt = riscv_cpu_virt_enabled(env);
 
     g_assert(riscv_has_ext(env, RVH));
 
@@ -684,12 +683,6 @@ void riscv_cpu_set_virt_enabled(CPURISCVState *env, bool enable)
          */
         riscv_cpu_update_mip(env, 0, 0);
     }
-}
-
-bool riscv_cpu_two_stage_lookup(int mmu_idx)
-{
-    return (mmu_idx & TB_FLAGS_PRIV_HYP_ACCESS_MASK) &&
-           (mmu_idx != MMU_IDX_SS_ACCESS);
 }
 
 int riscv_cpu_claim_interrupts(RISCVCPU *cpu, uint64_t interrupts)
@@ -885,6 +878,7 @@ static int get_physical_address(CPURISCVState *env, hwaddr *physical,
     hwaddr ppn;
     int napot_bits = 0;
     bool is_sstack = (sstack != NULL) && (*sstack == SSTACK_YES);
+    bool sstack_page = false;
     target_ulong napot_mask;
 
     /*
@@ -1077,8 +1071,8 @@ restart:
          * regular memory (non-SS) raise load and store/AMO access fault.
          * Second stage translations don't participate in Shadow Stack.
          */
-        bool sstack_page = (cpu_get_bcfien(env) && first_stage &&
-                            ((pte & (PTE_R | PTE_W | PTE_X)) == PTE_W));
+        sstack_page = (env_archcpu(env)->cfg.ext_cfi_ss && first_stage &&
+                       ((pte & (PTE_R | PTE_W | PTE_X)) == PTE_W));
 
         if (!(pte & PTE_V)) {
             /* Invalid PTE */
@@ -1115,6 +1109,7 @@ restart:
         if (sstack_page) {
             break;
         }
+        return TRANSLATE_FAIL;
     case PTE_W | PTE_X:
         return TRANSLATE_FAIL;
     }
@@ -1226,13 +1221,6 @@ restart:
 
     /* for superpage mappings, make a fake leaf PTE for the TLB's benefit. */
     target_ulong vpn = addr >> PGSHIFT;
-
-    if (cpu->cfg.ext_svnapot && (pte & PTE_N)) {
-        napot_bits = ctzl(ppn) + 1;
-        if ((i != (levels - 1)) || (napot_bits != 4)) {
-            return TRANSLATE_FAIL;
-        }
-    }
 
     if (riscv_cpu_cfg(env)->ext_svnapot && (pte & PTE_N)) {
         napot_bits = ctzl(ppn) + 1;
