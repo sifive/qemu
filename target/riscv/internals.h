@@ -53,7 +53,7 @@ static inline bool mmuidx_sum(int mmu_idx)
 
 static inline bool mmuidx_2stage(int mmu_idx)
 {
-    return mmu_idx & MMU_2STAGE_BIT;
+    return ((mmu_idx != 7) && mmu_idx & MMU_2STAGE_BIT);
 }
 
 /* share data between vector helpers and decode code */
