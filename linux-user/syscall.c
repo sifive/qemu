@@ -6444,6 +6444,12 @@ abi_long do_arch_prctl(CPUX86State *env, int code, abi_ulong addr)
 # define PR_SME_VL_LEN_MASK  0xffff
 # define PR_SME_VL_INHERIT   (1 << 17)
 #endif
+#ifndef PR_CFI_SET
+# define PR_CFI_SET             999
+# define PR_CFI_SHADOW_STACK    0x1
+# define PR_CFI_LANDING_PAD     0x2
+# define PR_CFI_ALL             (PR_CFI_LANDING_PAD | PR_CFI_SHADOW_STACK)
+#endif
 
 #include "target_prctl.h"
 
@@ -6489,6 +6495,9 @@ static abi_long do_prctl_inval1(CPUArchState *env, abi_long arg2)
 #endif
 #ifndef do_prctl_sme_set_vl
 #define do_prctl_sme_set_vl do_prctl_inval1
+#endif
+#ifndef do_prctl_cfi_set
+#define do_prctl_cfi_set do_prctl_inval1
 #endif
 
 static abi_long do_prctl(CPUArchState *env, abi_long option, abi_long arg2,
@@ -6615,6 +6624,8 @@ static abi_long do_prctl(CPUArchState *env, abi_long option, abi_long arg2,
     case PR_SET_TSC:
         /* Disable to prevent the target disabling stuff we need. */
         return -TARGET_EINVAL;
+    case PR_CFI_SET:
+        return do_prctl_cfi_set(env, arg2);
 
     default:
         qemu_log_mask(LOG_UNIMP, "Unsupported prctl: " TARGET_ABI_FMT_ld "\n",
