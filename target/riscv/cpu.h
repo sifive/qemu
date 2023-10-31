@@ -267,7 +267,10 @@ struct CPUArchState {
 #ifdef CONFIG_USER_ONLY
     uint32_t elf_flags;
     bool ubcfi_en;
+    bool ubcfi_locked;
     bool ufcfi_en;
+    bool ufcfi_locked;
+    uint64_t shadow_stack_base;
 #endif
 
     target_ulong priv;

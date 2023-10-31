@@ -6351,6 +6351,28 @@ abi_long do_arch_prctl(CPUX86State *env, int code, abi_ulong addr)
 # define PR_SME_VL_LEN_MASK  0xffff
 # define PR_SME_VL_INHERIT   (1 << 17)
 #endif
+#ifndef PR_GET_SHADOW_STACK_STATUS
+# define PR_GET_SHADOW_STACK_STATUS     74
+#endif
+#ifndef PR_SET_SHADOW_STACK_STATUS
+# define PR_SET_SHADOW_STACK_STATUS     75
+# define PR_SHADOW_STACK_ENABLE         (1UL << 0)
+# define PR_SHADOW_STACK_WRITE          (1UL << 1)
+# define PR_SHADOW_STACK_PUSH           (1UL << 2)
+#endif
+#ifndef PR_LOCK_SHADOW_STACK_STATUS
+# define PR_LOCK_SHADOW_STACK_STATUS    76
+#endif
+#ifndef PR_GET_INDIR_BR_LP_STATUS
+# define PR_GET_INDIR_BR_LP_STATUS      77
+#endif
+#ifndef PR_SET_INDIR_BR_LP_STATUS
+# define PR_SET_INDIR_BR_LP_STATUS      78
+# define PR_INDIR_BR_LP_ENABLE          (1UL << 0)
+#endif
+#ifndef PR_LOCK_INDIR_BR_LP_STATUS
+# define PR_LOCK_INDIR_BR_LP_STATUS     79
+#endif
 
 #include "target_prctl.h"
 
@@ -6396,6 +6418,9 @@ static abi_long do_prctl_inval1(CPUArchState *env, abi_long arg2)
 #endif
 #ifndef do_prctl_sme_set_vl
 #define do_prctl_sme_set_vl do_prctl_inval1
+#endif
+#ifndef do_prctl_cfi_set
+#define do_prctl_cfi_set do_prctl_inval1
 #endif
 
 static abi_long do_prctl(CPUArchState *env, abi_long option, abi_long arg2,
@@ -6534,6 +6559,13 @@ static abi_long do_prctl(CPUArchState *env, abi_long option, abi_long arg2,
     case PR_SET_TSC:
         /* Disable to prevent the target disabling stuff we need. */
         return -TARGET_EINVAL;
+    case PR_GET_SHADOW_STACK_STATUS:
+    case PR_SET_SHADOW_STACK_STATUS:
+    case PR_LOCK_SHADOW_STACK_STATUS:
+    case PR_GET_INDIR_BR_LP_STATUS:
+    case PR_SET_INDIR_BR_LP_STATUS:
+    case PR_LOCK_INDIR_BR_LP_STATUS:
+        return do_prctl_cfi_set(env, option, arg2);
 
     default:
         qemu_log_mask(LOG_UNIMP, "Unsupported prctl: " TARGET_ABI_FMT_ld "\n",
