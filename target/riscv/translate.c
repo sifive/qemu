@@ -1290,6 +1290,8 @@ static void riscv_tr_translate_insn(DisasContextBase *dcbase, CPUState *cpu)
     }
 }
 
+bool zicfilp_audit_mode = true;
+
 static void riscv_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
 {
     DisasContext *ctx = container_of(dcbase, DisasContext, base);
@@ -1310,7 +1312,13 @@ static void riscv_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
          * If the "lp expected" flag is still up, the block needs to take an
          * illegal instruction exception.
          */
-        tcg_set_insn_param(cfi_lp_check, 1, tcgv_i32_arg(tcg_constant_i32(1)));
+        if (!zicfilp_audit_mode)
+            tcg_set_insn_param(cfi_lp_check, 1,
+                               tcgv_i32_arg(tcg_constant_i32(1)));
+        else /* in audit mode, let it go through */ {
+            printf("landing pad violation, audit mode, letting it go through\n");
+            env->elp = NO_LP_EXPECTED;
+        }
     } else {
         /*
         * LP instruction requirement was met, clear up LP expected
