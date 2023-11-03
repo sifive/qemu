@@ -116,8 +116,11 @@ static bool trans_ssamoswap_w(DisasContext *ctx, arg_amoswap_w *a)
 {
     REQUIRE_EXT(ctx, RVA);
 
+    /* If user mode, then use regular RW memory */
+#ifndef CONFIG_USER_MODE
     /* Shadow stack access and thus index is SS TLB index */
     ctx->mem_idx = MMU_IDX_SS_ACCESS;
+#endif
     return gen_amo(ctx, a, &tcg_gen_atomic_xchg_tl, (MO_ALIGN | MO_TESL));
 }
 
@@ -191,8 +194,11 @@ static bool trans_ssamoswap_d(DisasContext *ctx, arg_amoswap_w *a)
 {
     REQUIRE_64BIT(ctx);
 
+    /* If user mode, then use regular RW memory */
+#ifndef CONFIG_USER_MODE
     /* Shadow stack access and thus index is SS TLB index */
     ctx->mem_idx = MMU_IDX_SS_ACCESS;
+#endif
     return gen_amo(ctx, a, &tcg_gen_atomic_xchg_tl, (MO_ALIGN | MO_TEUQ));
 }
 
