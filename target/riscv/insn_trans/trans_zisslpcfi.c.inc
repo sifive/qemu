@@ -35,6 +35,8 @@ static MemOp mxl_memop(DisasContext *ctx)
 
 static bool trans_sspopchk(DisasContext *ctx, arg_sspopchk *a)
 {
+    int ss_mmu_idx = MMU_IDX_SS_ACCESS;
+
     /* cfi only supported on 32bit and 64bit */
     if (get_xl(ctx) != MXL_RV32 && get_xl(ctx) != MXL_RV64) {
         return false;
@@ -66,7 +68,12 @@ static bool trans_sspopchk(DisasContext *ctx, arg_sspopchk *a)
     TCGv_i32 ssp_csr = tcg_constant_i32(CSR_SSP);
     TCGv data = tcg_temp_new();
     gen_helper_csrr(addr, cpu_env, ssp_csr);
-    tcg_gen_qemu_ld_tl(data, addr, MMU_IDX_SS_ACCESS,
+
+#ifdef CONFIG_USER_MODE
+    ss_mmu_idx = 0 /* qemu-user index */
+#endif
+
+    tcg_gen_qemu_ld_tl(data, addr, ss_mmu_idx,
                        mxl_memop(ctx) | MO_ALIGN);
     TCGv rs1 = get_gpr(ctx, a->rs1, EXT_NONE);
     gen_helper_sschk_mismatch(cpu_env, rs1, data);
@@ -82,6 +89,7 @@ static bool trans_sspopchk(DisasContext *ctx, arg_sspopchk *a)
 
 static bool trans_sspush(DisasContext *ctx, arg_sspush *a)
 {
+    int ss_mmu_idx = MMU_IDX_SS_ACCESS;
     /* cfi only supported on 32bit and 64bit */
     if (get_xl(ctx) != MXL_RV32 && get_xl(ctx) != MXL_RV64) {
         return false;
@@ -116,8 +124,11 @@ static bool trans_sspush(DisasContext *ctx, arg_sspush *a)
      * subtract XLEN from addr, align to XLEN . How do i do that? Is below the
      * right way
      */
+#ifdef CONFIG_USER_MODE
+    ss_mmu_idx = 0 /* U mode index */
+#endif
     tcg_gen_addi_tl(addr, addr, tmp);
-    tcg_gen_qemu_st_tl(data, addr, MMU_IDX_SS_ACCESS,
+    tcg_gen_qemu_st_tl(data, addr, ss_mmu_idx,
                        mxl_memop(ctx) | MO_ALIGN);
 
     gen_helper_csrw(cpu_env, ssp_csr, addr);
