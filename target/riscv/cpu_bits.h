@@ -701,6 +701,9 @@ typedef enum RISCVException {
     RISCV_EXCP_SEMIHOST = 0x3f,
 } RISCVException;
 
+#define RISCV_EXCP_SW_CHECK_FCFI_VIOLATION_CODE 2
+#define RISCV_EXCP_SW_CHECK_BCFI_VIOLATION_CODE 3
+
 #define RISCV_EXCP_INT_FLAG                0x80000000
 #define RISCV_EXCP_INT_MASK                0x7fffffff
 
