@@ -24,4 +24,15 @@ static inline abi_ulong get_sp_from_cpustate(CPURISCVState *state)
 {
    return state->gpr[xSP];
 }
+
+static inline void set_bcfi(CPURISCVState *env)
+{
+   env->ubcfi_en = true;
+}
+
+static inline void set_fcfi(CPURISCVState *env)
+{
+   env->ufcfi_en = true;
+}
+
 #endif
