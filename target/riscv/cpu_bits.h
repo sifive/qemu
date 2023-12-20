@@ -690,11 +690,16 @@ typedef enum RISCVException {
     RISCV_EXCP_LOAD_PAGE_FAULT = 0xd, /* since: priv-1.10.0 */
     RISCV_EXCP_STORE_PAGE_FAULT = 0xf, /* since: priv-1.10.0 */
     RISCV_EXCP_SEMIHOST = 0x10,
+    /* priv-isa:TBD. introduced by zicfiss & ziciflp */
+    RISCV_EXCP_SW_CHECK_FAULT = 0x12,
     RISCV_EXCP_INST_GUEST_PAGE_FAULT = 0x14,
     RISCV_EXCP_LOAD_GUEST_ACCESS_FAULT = 0x15,
     RISCV_EXCP_VIRT_INSTRUCTION_FAULT = 0x16,
     RISCV_EXCP_STORE_GUEST_AMO_ACCESS_FAULT = 0x17,
 } RISCVException;
+
+#define RISCV_EXCP_SW_CHECK_FCFI_VIOLATION_CODE 2
+#define RISCV_EXCP_SW_CHECK_BCFI_VIOLATION_CODE 3
 
 #define RISCV_EXCP_INT_FLAG                0x80000000
 #define RISCV_EXCP_INT_MASK                0x7fffffff
