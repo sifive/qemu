@@ -4138,13 +4138,7 @@ static uint32_t operand_tbl_index(rv_inst inst)
 
 static uint32_t operand_lpl(rv_inst inst)
 {
-    uint32_t label_width = 9;
-
-    if ((inst >> 26) & 0b11) {
-        label_width = 8;
-    }
-
-    return (inst >> 15) & ((1 << label_width) - 1);
+    return ((inst >> 12) & 0xfffff);
 }
 
 /* decode operands */
