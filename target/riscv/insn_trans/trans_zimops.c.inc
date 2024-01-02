@@ -51,3 +51,13 @@
       gen_set_gpr(ctx, a->rd, dest);
       return true;
  }
+
+static bool trans_zcmops(DisasContext *ctx, arg_zcmops * a)
+{
+    /* zimops not implemented, return false */
+    if (!ctx->cfg_ptr->ext_zimops) {
+        return false;
+    }
+
+    return true;
+}
