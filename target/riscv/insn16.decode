@@ -32,6 +32,7 @@
 %uimm_cl_w     5:1 10:3 6:1       !function=ex_shift_2
 %imm_cb        12:s1 5:2 2:1 10:2 3:2 !function=ex_shift_1
 %imm_cj        12:s1 8:1 9:2 6:1 7:1 2:1 11:1 3:3 !function=ex_shift_1
+%zcmop_n       8:3
 
 %shlimm_6bit  12:1 2:5               !function=ex_rvc_shiftli
 %shrimm_6bit  12:1 2:5               !function=ex_rvc_shiftri
@@ -65,6 +66,8 @@
 
 &cmpp      urlist spimm
 &cmjt      index
+
+&cmop      zcmop_n
 
 # Formats 16:
 @cr        ....  ..... .....  .. &r      rs2=%rs2_5       rs1=%rd     %rd
@@ -109,6 +112,8 @@
 @cm_mv        ... ...  ... .. ... ..  &r2_s  rs2=%r2s     rs1=%r1s
 @cm_jt        ... ...  ........   ..  &cmjt  %index
 
+@c_mop        ... . .....  ..... ..  &cmop %zcmop_n
+
 # *** RV32/64C Standard Extension (Quadrant 0) ***
 {
   # Opcode of all zeros is illegal; rd != 0, nzuimm == 0 is reserved.
@@ -140,6 +145,7 @@ sw                110  ... ... .. ... 00 @cs_w
 addi              000 .  .....  ..... 01 @ci
 addi              010 .  .....  ..... 01 @c_li
 {
+  zcmops          011 0  0...1  00000 01 @c_mop # zcmop carving out of illegal c.lui xn,0 space
   illegal         011 0  -----  00000 01 # c.addi16sp and c.lui, RES nzimm=0
   addi            011 .  00010  ..... 01 @c_addi16sp
   lui             011 .  .....  ..... 01 @c_lui
