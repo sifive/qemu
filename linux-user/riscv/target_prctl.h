@@ -7,10 +7,10 @@ static abi_long do_prctl_cfi_set(CPUArchState *env, abi_long flag)
     if (flag & ~PR_CFI_ALL) {
         return -TARGET_EINVAL;
     }
-    if (env->ubcfien && !(flag && PR_CFI_SHADOW_STACK)) {
+    if (env->ubcfien && !(flag & PR_CFI_SHADOW_STACK)) {
         return -TARGET_EACCES;
     }
-    if (env->ufcfien && !(flag && PR_CFI_LANDING_PAD)) {
+    if (env->ufcfien && !(flag & PR_CFI_LANDING_PAD)) {
         return -TARGET_EACCES;
     }
     if (env_archcpu(env)->cfg.ext_cfi_ss && flag & PR_CFI_SHADOW_STACK) {
