@@ -292,7 +292,7 @@ void helper_cfi_check_landing_pad(CPURISCVState *env, int lbl)
          * greater than 31 and then shift 12 right
          */
         if (lbl && (lbl != ((env->gpr[xT2] & 0xFFFFFFFF) >> 12))) {
-            env->cfi_violation_code = RISCV_EXCP_SW_CHECK_BCFI_VIOLATION_CODE;
+            env->cfi_violation_code = RISCV_EXCP_SW_CHECK_FCFI_VIOLATION_CODE;
             riscv_raise_exception(env, RISCV_EXCP_SW_CHECK_FAULT, GETPC());
         }
 
