@@ -1319,11 +1319,6 @@ static void riscv_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
             printf("landing pad violation, audit mode, letting it go through\n");
             env->elp = NO_LP_EXPECTED;
         }
-    } else {
-        /*
-        * LP instruction requirement was met, clear up LP expected
-        */
-        env->elp = NO_LP_EXPECTED;
     }
 }
 
