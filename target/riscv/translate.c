@@ -1290,7 +1290,7 @@ static void riscv_tr_translate_insn(DisasContextBase *dcbase, CPUState *cpu)
     }
 }
 
-bool zicfilp_audit_mode = true;
+bool zicfilp_audit_mode = false;
 
 static void riscv_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
 {
