@@ -1717,12 +1717,6 @@ typedef struct elf64_shdr {
 #define GNU_PROPERTY_AARCH64_FEATURE_1_BTI      (1u << 0)
 #define GNU_PROPERTY_AARCH64_FEATURE_1_PAC      (1u << 1)
 
-/* .note.gnu.property types for RISCV: */
-/* Bits for GNU_PROPERTY_RISCV_FEATURE_1_FCFI/BCFI */
-#define GNU_PROPERTY_RISCV_FEATURE_1_AND  0xc0000000
-#define GNU_PROPERTY_RISCV_FEATURE_1_FCFI (1u << 0)
-#define GNU_PROPERTY_RISCV_FEATURE_1_BCFI (1u << 1)
-
 /*
  * Physical entry point into the kernel.
  *

@@ -22,7 +22,6 @@
 #include "qemu/error-report.h"
 #include "target_signal.h"
 #include "accel/tcg/debuginfo.h"
-#include "target_cpu.h"
 
 #ifdef _ARCH_PPC64
 #undef ARCH_DLINFO
@@ -1929,28 +1928,6 @@ static bool arch_parse_elf_property(uint32_t pr_type, uint32_t pr_datasz,
 }
 #define ARCH_USE_GNU_PROPERTY 1
 
-#elif defined(TARGET_RISCV)
-
-static bool arch_parse_elf_property(uint32_t pr_type, uint32_t pr_datasz,
-                                    const uint32_t *data,
-                                    struct image_info *info,
-                                    Error **errp)
-{
-    if (pr_type == GNU_PROPERTY_RISCV_FEATURE_1_AND) {
-        if (pr_datasz != sizeof(uint32_t)) {
-            error_setg(errp, "Ill-formed GNU_PROPERTY_AARCH64_FEATURE_1_AND");
-            return false;
-        }
-        printf("Located GNU_PROPERTY_RISCV_FEATURE_1_AND in notes in ELF\n");
-        /* We will extract GNU_PROPERTY_RISCV_FEATURE_1_FCFI/BCFI later. */
-        info->note_flags = *data;
-    } else {
-        printf("No GNU_PROPERTY_RISCV_FEATURE_1_AND in ELF\n");
-    }
-    return true;
-}
-#define ARCH_USE_GNU_PROPERTY 1
-
 #else
 
 static bool arch_parse_elf_property(uint32_t pr_type, uint32_t pr_datasz,
@@ -3247,16 +3224,6 @@ static void load_elf_image(const char *image_name, int image_fd,
         && (pinterp_name == NULL || *pinterp_name == 0)
         && cpu_isar_feature(aa64_bti, ARM_CPU(thread_cpu))) {
         prot_exec |= TARGET_PROT_BTI;
-    }
-#endif
-
-#ifdef TARGET_RISCV
-    if (info->note_flags & GNU_PROPERTY_RISCV_FEATURE_1_FCFI) {
-        set_fcfi(&(RISCV_CPU(thread_cpu)->env));
-    }
-
-    if (info->note_flags & GNU_PROPERTY_RISCV_FEATURE_1_BCFI) {
-        set_bcfi(&(RISCV_CPU(thread_cpu)->env));
     }
 #endif
 
