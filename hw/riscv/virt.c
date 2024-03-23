@@ -285,6 +285,24 @@ static void create_fdt_socket_cpus(RISCVVirtState *s, int socket,
         core_name = g_strdup_printf("%s/core%d", clust_name, cpu);
         qemu_fdt_add_subnode(ms->fdt, core_name);
         qemu_fdt_setprop_cell(ms->fdt, core_name, "cpu", cpu_phandle);
+
+        if (cpu_ptr->cfg.ext_sdtrig) {
+            char *debug_name = g_strdup_printf("/cpus/cpu@%d/debug", cpu);
+            char *trigger_name = g_strdup_printf("/cpus/cpu@%d/debug/trigger-module", cpu);
+
+            qemu_fdt_add_subnode(ms->fdt, debug_name);
+            qemu_fdt_setprop_string(ms->fdt, debug_name, "compatible", "riscv,debug-v1.0.0");
+            qemu_fdt_add_subnode(ms->fdt, trigger_name);
+            qemu_fdt_setprop(ms->fdt, trigger_name, "mcontext-present", NULL, 0);
+            qemu_fdt_setprop(ms->fdt, trigger_name, "scontext-present", NULL, 0);
+
+            if (riscv_has_ext(&cpu_ptr->env, RVH)) {
+                qemu_fdt_setprop(ms->fdt, trigger_name, "hcontext-present", NULL, 0);
+            }
+
+            g_free(trigger_name);
+            g_free(debug_name);
+        }
     }
 }
 
