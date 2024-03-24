@@ -28,6 +28,12 @@ static abi_long do_prctl_cfi_set(CPUArchState *env, abi_long option, abi_long fl
                         }
                         env->ssp = ROUND_UP(ssp + 1, TARGET_PAGE_SIZE);
                     }
+                    /* FIXME: SS instructions will not generated in TBs if bcfi is off.
+                     * This is a workaround to inavlidate all TBs to force regeneration
+                     * of them after a CFI state change. There might be a more efficient
+                     * approach instead of flushing all TBs
+                     **/
+                    tb_flush(env_cpu(env));
                     return 0;
                 }
                 return -TARGET_EINVAL;
