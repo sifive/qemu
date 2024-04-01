@@ -8,6 +8,9 @@
  **/
 static abi_long do_prctl_cfi_set(CPUArchState *env, abi_long option, abi_long flag)
 {
+    /* CFI instruction semantics will not be generated in TBs if bcfi/fcfi is off.
+     * Hence we must inavlidate all TBs to force regeneration after a CFI state change.
+     **/
     if (env_archcpu(env)->cfg.ext_cfi_ss) {
         switch (option) {
         case PR_GET_SHADOW_STACK_STATUS:
@@ -28,10 +31,6 @@ static abi_long do_prctl_cfi_set(CPUArchState *env, abi_long option, abi_long fl
                         }
                         env->ssp = ROUND_UP(ssp + 1, TARGET_PAGE_SIZE);
                     }
-                    /* SS instructions will not generate in TBs if bcfi is off.
-                     * Hence we must inavlidate all TBs to force regeneration
-                     * of SS push/pop after a CFI state change.
-                     **/
                     tb_flush(env_cpu(env));
                     return 0;
                 }
@@ -52,6 +51,7 @@ static abi_long do_prctl_cfi_set(CPUArchState *env, abi_long option, abi_long fl
                     return -TARGET_EACCES;
                 if (flag & PR_INDIR_BR_LP_ENABLE) {
                     env->ufcfien = true;
+                    tb_flush(env_cpu(env));
                     return 0;
                 }
                 return -TARGET_EINVAL;
