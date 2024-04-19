@@ -25,6 +25,7 @@
 #include "signal-common.h"
 #include "elf.h"
 #include "semihosting/common-semi.h"
+#include "user-mmap.h"
 
 void cpu_loop(CPURISCVState *env)
 {
@@ -94,12 +95,33 @@ void cpu_loop(CPURISCVState *env)
     }
 }
 
+#define ZICFISS_GUARD_SIZE	(2UL * TARGET_PAGE_SIZE)
+#define ZICFISS_STACK_SIZE	(16UL * TARGET_PAGE_SIZE)
+#define ZICFISS_THREAD_SIZE	(ZICFISS_STACK_SIZE + ZICFISS_GUARD_SIZE)
+void zicfiss_shadow_stack_alloc(CPUArchState *env)
+{
+    abi_ulong new_base;
+
+    if (!cpu_get_bcfien(env))
+        return;
+
+    /* SS page should be surrounded by two guard pages */
+    new_base = (abi_ulong) target_mmap(0, ZICFISS_THREAD_SIZE, PROT_NONE,
+                                  MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if ((abi_long)new_base == -1) {
+        perror("shadow stack alloc");
+        exit(EXIT_FAILURE);
+    }
+    new_base += TARGET_PAGE_SIZE;
+    target_mprotect(new_base, ZICFISS_STACK_SIZE, PROT_READ | PROT_WRITE);
+    env->ssp = new_base + ZICFISS_STACK_SIZE;
+}
+
 void target_cpu_copy_regs(CPUArchState *env, struct target_pt_regs *regs)
 {
     CPUState *cpu = env_cpu(env);
     TaskState *ts = cpu->opaque;
     struct image_info *info = ts->info;
-    uintptr_t ssp = 0;
 
     env->pc = regs->sepc;
     env->gpr[xSP] = regs->sp;
@@ -114,14 +136,5 @@ void target_cpu_copy_regs(CPUArchState *env, struct target_pt_regs *regs)
     ts->heap_base = info->brk;
     /* This will be filled in on the first SYS_HEAPINFO call.  */
     ts->heap_limit = 0;
-
-    if (cpu_get_bcfien(env)) {
-        ssp = (uintptr_t) mmap(0, TARGET_PAGE_SIZE, PROT_READ | PROT_WRITE,
-                               MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        if ((intptr_t)ssp == -1) {
-            perror("shadow stack alloc");
-            exit(EXIT_FAILURE);
-        }
-        env->ssp = ROUND_UP(ssp + 1, TARGET_PAGE_SIZE);
-    }
+    zicfiss_shadow_stack_alloc(env);
 }

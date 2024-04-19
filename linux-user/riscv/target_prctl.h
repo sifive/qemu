@@ -21,19 +21,8 @@ static abi_long do_prctl_cfi_set(CPUArchState *env, abi_long option, abi_long fl
                     return -TARGET_EACCES;
                 if (flag & PR_SHADOW_STACK_ENABLE) {
                     env->ubcfien = true;
-                    if (env->ssp == 0) {
-                        uintptr_t ssp = 0;
-                        /* SS page should be surrounded by two guard pages */
-                        ssp = (uintptr_t) mmap(0, TARGET_PAGE_SIZE * 3, PROT_NONE,
-                                            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-                        if ((intptr_t)ssp == -1) {
-                            perror("shadow stack alloc");
-                            exit(EXIT_FAILURE);
-                        }
-                        ssp += TARGET_PAGE_SIZE;
-                        mprotect((void *)ssp, TARGET_PAGE_SIZE, PROT_READ | PROT_WRITE);
-                        env->ssp = ROUND_UP(ssp + 1, TARGET_PAGE_SIZE);
-                    }
+                    if (env->ssp == 0)
+                        zicfiss_shadow_stack_alloc(env);
                     tb_flush(env_cpu(env));
                     return 0;
                 }
