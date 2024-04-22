@@ -870,6 +870,9 @@ typedef enum {
     rv_op_ssamoswap_d = 839,
     rv_op_zimops_r = 840,
     rv_op_zimops_rr = 841,
+    rv_op_c_mop = 842,
+    rv_op_c_sspush = 843,
+    rv_op_c_sspopchk = 844,
 } rv_op;
 
 /* register names */
@@ -2024,6 +2027,9 @@ const rv_opcode_data rvi_opcode_data[] = {
     { "ssamoswap.d", rv_codec_r_a, rv_fmt_aqrl_rd_rs2_rs1, NULL, 0, 0, 0 },
     { "zimops_r", rv_codec_r, rv_fmt_rd, NULL, 0, 0, 0 },
     { "zimops_rr", rv_codec_r, rv_fmt_rd, NULL, 0, 0, 0 },
+    { "c.mop", rv_codec_cr_zcmop, rv_fmt_none, NULL, 0, 0, 0},
+    { "c.sspush", rv_codec_cr_zcmop, rv_fmt_rs2, NULL, rv_op_sspush, rv_op_sspush, rv_op_sspush},
+    { "c.sspopchk", rv_codec_cr_zcmop, rv_fmt_rs1, NULL, rv_op_sspopchk, rv_op_sspopchk, rv_op_sspopchk},
 };
 
 /* CSR names */
@@ -2318,6 +2324,16 @@ static void decode_inst_opcode(rv_decode *dec, rv_isa isa)
             break;
         case 2: op = rv_op_c_li; break;
         case 3:
+            if (!((inst >> 2) & 0b10000011111)) {
+                op = rv_op_c_mop;
+                // FIXME: should be done in zicfiss decoder
+                switch ((inst >> 7) & 0b11111) {
+                case 1: op = rv_op_c_sspush; break;
+                case 5: op = rv_op_c_sspopchk; break;
+                default: op = rv_op_c_mop; break;
+                }
+                break;
+            }
             switch ((inst >> 7) & 0b11111) {
             case 2: op = rv_op_c_addi16sp; break;
             default: op = rv_op_c_lui; break;
@@ -4524,6 +4540,9 @@ static void decode_inst_operands(rv_decode *dec, rv_isa isa)
         break;
     case rv_codec_lp:
         dec->imm = operand_lpl(inst);
+        break;
+    case rv_codec_cr_zcmop:
+        dec->rs1 = dec->rs2 = ((inst & 0x700) >> 7) + 1;
         break;
     };
 }
