@@ -3727,12 +3727,13 @@ static void decode_inst_opcode(rv_decode *dec, rv_isa isa)
                 if ((((inst >> 20) & 0b100000011100) ==
                         0b100000011100)) {
                     op = rv_op_zimops_r;
+                    /* extract n[4:0] from zimop_r */
                     switch (((inst >> 20) & 3) |
                             (((inst >> 26) & 3) << 2) |
                             (((inst >> 30) & 1) << 4)) {
                     case 28:
                         op = rv_op_sspopchk;
-                        if (((inst >> 12) & 0b11111) == 0b00000) {
+                        if (((inst >> 15) & 0b11111) == 0b00000) {
                             op = rv_op_ssrdp;
                         }
                         break;
@@ -3740,6 +3741,7 @@ static void decode_inst_opcode(rv_decode *dec, rv_isa isa)
                 } else if ((((inst >> 25) & 0b1000001) ==
                         0b1000001)) {
                     op = rv_op_zimops_rr;
+                    /* extract n[2:0] from zimop_rr */
                     switch (((inst >> 26) & 3) |
                             (((inst >> 30) & 1) << 2)) {
                     case 7:
