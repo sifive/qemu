@@ -65,7 +65,7 @@ static bool trans_lpad(DisasContext *ctx, arg_lpad *a)
         }
 }
 
-    /* forward cfi not enabled, should go to trans_zimops. return false */
+    /* forward cfi not enabled, should go to trans_zimop. return false */
     if (!ctx->fcfi_enabled) {
         return false;
     }

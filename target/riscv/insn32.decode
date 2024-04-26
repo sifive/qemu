@@ -171,8 +171,8 @@ csrrwi   ............     ..... 101 ..... 1110011 @csr
 csrrsi   ............     ..... 110 ..... 1110011 @csr
 csrrci   ............     ..... 111 ..... 1110011 @csr
 
-# zimops (unpriv integer may be operations) instructions with system opcode
-# These're superset of for cfi encodings. zimops_r and zimops_rr should be last
+# zimop (unpriv integer may be operations) instructions with system opcode
+# These're superset of for cfi encodings. zimop_r and zimop_rr should be last
 # entry in below overlapping patterns so that it acts as final sink for overlapping patterns.
 # Any new encoding that can be used should be placed above mop.r and mop.rr
 
@@ -180,12 +180,12 @@ csrrci   ............     ..... 111 ..... 1110011 @csr
 {
   ssrdp      1100110 11100     00000 100 ..... 1110011 %rd
   sspopchk   1100110 11100     ..... 100 00000 1110011 @ss_pop
-  zimops_r   1-00--0 111--     ----- 100 ..... 1110011 %rd
+  zimop_r   1-00--0 111--     ----- 100 ..... 1110011 %rd
 }
 # cfi instructions carved out of mop.rr
 {
   sspush     1100111 .....     00000 100 00000 1110011 @ss_push
-  zimops_rr  1-00--1 -----     ----- 100 ..... 1110011 %rd
+  zimop_rr  1-00--1 -----     ----- 100 ..... 1110011 %rd
 }
 
 # *** RV64I Base Instruction Set (in addition to RV32I) ***

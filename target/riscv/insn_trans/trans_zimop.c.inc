@@ -16,16 +16,16 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- static bool trans_zimops_r(DisasContext *ctx, arg_zimops_r * a)
+ static bool trans_zimop_r(DisasContext *ctx, arg_zimop_r * a)
  {
-      /* zimops not implemented, raise illegal instruction & return true */
-      if (!ctx->cfg_ptr->ext_zimops) {
+      /* zimop not implemented, raise illegal instruction & return true */
+      if (!ctx->cfg_ptr->ext_zimop) {
             gen_exception_illegal(ctx);
             return true;
       }
 
       /*
-       * zimops implemented, simply grab destination and mov zero.
+       * zimop implemented, simply grab destination and mov zero.
        * return true
        */
       TCGv dest = dest_gpr(ctx, a->rd);
@@ -34,16 +34,16 @@
       return true;
  }
 
- static bool trans_zimops_rr(DisasContext *ctx, arg_zimops_r * a)
+ static bool trans_zimop_rr(DisasContext *ctx, arg_zimop_r * a)
  {
-      /* zimops not implemented, raise illegal instruction & return true */
-      if (!ctx->cfg_ptr->ext_zimops) {
+      /* zimop not implemented, raise illegal instruction & return true */
+      if (!ctx->cfg_ptr->ext_zimop) {
             gen_exception_illegal(ctx);
             return true;
       }
 
       /*
-       * zimops implemented, simply grab destination and mov zero.
+       * zimop implemented, simply grab destination and mov zero.
        * return true
        */
       TCGv dest = dest_gpr(ctx, a->rd);
@@ -54,8 +54,8 @@
 
 static bool trans_zcmops(DisasContext *ctx, arg_zcmops * a)
 {
-    /* zimops not implemented, return false */
-    if (!ctx->cfg_ptr->ext_zimops) {
+    /* zimop not implemented, return false */
+    if (!ctx->cfg_ptr->ext_zimop) {
         return false;
     }
 

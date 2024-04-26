@@ -1134,9 +1134,9 @@ static unsigned int get_ss_index(DisasContext *ctx)
 #include "decode-insn16.c.inc"
 #include "insn_trans/trans_rvzce.c.inc"
 
-/* Include zimops and cfi implementations */
+/* Include zimop and cfi implementations */
 #include "insn_trans/trans_zisslpcfi.c.inc"
-#include "insn_trans/trans_zimops.c.inc"
+#include "insn_trans/trans_zimop.c.inc"
 
 /* Include decoders for factored-out extensions */
 #include "decode-XVentanaCondOps.c.inc"

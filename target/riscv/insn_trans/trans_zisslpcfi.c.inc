@@ -41,14 +41,14 @@ static bool trans_sspopchk(DisasContext *ctx, arg_sspopchk *a)
         return false;
     }
 
-    /* back cfi not enabled, should go to trans_zimops. return false */
+    /* back cfi not enabled, should go to trans_zimop. return false */
     if (!ctx->bcfi_enabled) {
         return false;
     }
 
     /*
      * sspopchk can only compare with x1 or x5. Everything else defaults to
-     * zimops
+     * zimop
      */
 
     if (a->rs1 != 1 && a->rs1 != 5) {
@@ -92,13 +92,13 @@ static bool trans_sspush(DisasContext *ctx, arg_sspush *a)
         return false;
     }
 
-    /* back cfi not enabled, should go to trans_zimops. return false */
+    /* back cfi not enabled, should go to trans_zimop. return false */
     if (!ctx->bcfi_enabled) {
         return false;
     }
 
     /*
-     * sspush can only push from x1 or x5. Everything else defaults to zimops
+     * sspush can only push from x1 or x5. Everything else defaults to zimop
      */
     if (a->rs2 != 1 && a->rs2 != 5) {
         return false;
@@ -139,7 +139,7 @@ static bool trans_ssrdp(DisasContext *ctx, arg_ssrdp *a)
         return false;
     }
 
-    /* back cfi not enabled, should go to trans_zimops. return false */
+    /* back cfi not enabled, should go to trans_zimop. return false */
     if (!ctx->bcfi_enabled) {
         return false;
     }
