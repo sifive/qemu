@@ -1313,9 +1313,8 @@ void riscv_cpu_validate_set_extensions(RISCVCPU *cpu, Error **errp)
         cpu->cfg.ext_zksh = true;
     }
 
-    if ((cpu->cfg.ext_cfi_ss || cpu->cfg.ext_cfi_lp) && !cpu->cfg.ext_zimop) {
-        error_setg(errp, "Zicfiss/Zicfilp extensions requires Zimop "
-                   "extension");
+    if (cpu->cfg.ext_cfi_ss && !cpu->cfg.ext_zimop) {
+        error_setg(errp, "Zicfiss extension requires Zimop extension");
         return;
     }
 
