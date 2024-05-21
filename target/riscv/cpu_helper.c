@@ -75,7 +75,10 @@ bool cpu_get_fcfien(CPURISCVState *env)
 
     switch (env->priv) {
     case PRV_U:
-        return (env->senvcfg & MENVCFG_LPE) ? true : false;
+        if (riscv_has_ext(env, RVS)) {
+            return (env->senvcfg & MENVCFG_LPE) ? true : false;
+        }
+        return (env->menvcfg & MENVCFG_LPE) ? true : false;
     case PRV_S:
         if (env->virt_enabled) {
             return (env->henvcfg & HENVCFG_LPE) ? true : false;
