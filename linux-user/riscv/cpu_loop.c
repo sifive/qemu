@@ -113,7 +113,11 @@ void zicfiss_shadow_stack_alloc(CPUArchState *env)
         exit(EXIT_FAILURE);
     }
     new_base += TARGET_PAGE_SIZE;
-    target_mprotect(new_base, ZICFISS_STACK_SIZE, PROT_READ | PROT_WRITE);
+    int ret = target_mprotect(new_base, ZICFISS_STACK_SIZE, PROT_READ | PROT_WRITE);
+    if (ret == -1) {
+        perror("shadow stack mprotect");
+        exit(EXIT_FAILURE);
+    }
     env->ssp = new_base + ZICFISS_STACK_SIZE;
 }
 
