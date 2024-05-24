@@ -623,8 +623,20 @@ void riscv_cpu_validate_set_extensions(RISCVCPU *cpu, Error **errp)
         cpu->pmu_avail_ctrs = 0;
     }
 
-    if (cpu->cfg.ext_cfi_ss && !cpu->cfg.ext_zimop) {
-        error_setg(errp, "Zicfiss extensions requires Zimop extension");
+    if (cpu->cfg.ext_cfi_ss) {
+        if (!cpu->cfg.ext_zimop) {
+            error_setg(errp, "Zicfiss extensions requires Zimop extension");
+            return;
+        }
+
+        if (!cpu->cfg.ext_zicsr) {
+            error_setg(errp, "Zicfiss extension requires Zicsr extension");
+            return;
+        }
+    }
+
+    if (cpu->cfg.ext_cfi_lp && !cpu->cfg.ext_zicsr) {
+        error_setg(errp, "Zicfilp extensions requires Zicsr extension");
         return;
     }
 
