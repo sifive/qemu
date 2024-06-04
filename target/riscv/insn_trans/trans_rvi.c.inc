@@ -50,9 +50,8 @@ static bool trans_lpad(DisasContext *ctx, arg_lpad *a)
      */
 
     if (ctx->base.pc_next == ctx->base.pc_first) {
-        ctx->fcfi_lp_expected = false;
         /* PC must be 4 byte aligned */
-        if (ctx->fcfi_enabled && ((ctx->base.pc_next) & 0x3)) {
+        if (ctx->fcfi_lp_expected && ((ctx->base.pc_next) & 0x3)) {
             /*
              * misaligned, according to spec we should raise sw check exception
              * instead of mis-aligned
@@ -61,9 +60,13 @@ static bool trans_lpad(DisasContext *ctx, arg_lpad *a)
                     tcg_constant_tl(RISCV_EXCP_SW_CHECK_FCFI_VIOLATION_CODE),
                     tcg_env, offsetof(CPURISCVState, cfi_violation_code));
             generate_exception(ctx, RISCV_EXCP_SW_CHECK);
+
+            ctx->fcfi_lp_expected = false;
             return true;
         }
-}
+
+        ctx->fcfi_lp_expected = false;
+    }
 
     /* forward cfi not enabled, should go to trans_zimops. return false */
     if (!ctx->fcfi_enabled) {
