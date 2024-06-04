@@ -62,6 +62,8 @@ static bool trans_lpad(DisasContext *ctx, arg_lpad *a)
             generate_exception(ctx, RISCV_EXCP_SW_CHECK);
 
             ctx->fcfi_lp_expected = false;
+
+            trace_zicfilp_unaligned_lpad_instr((uint64_t) ctx->base.pc_next);
             return true;
         }
 

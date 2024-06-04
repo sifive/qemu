@@ -30,6 +30,7 @@
 #include "semihosting/semihost.h"
 
 #include "internals.h"
+#include "trace.h"
 
 #define HELPER_H "helper.h"
 #include "exec/helper-info.c.inc"
@@ -1380,6 +1381,7 @@ static void riscv_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
          * illegal instruction exception.
          */
         tcg_set_insn_param(cfi_lp_check, 1, tcgv_i32_arg(tcg_constant_i32(1)));
+        trace_zicfilp_missing_lpad_instr((uint64_t) ctx->base.pc_first);
     }
 }
 

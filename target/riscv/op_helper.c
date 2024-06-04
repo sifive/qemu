@@ -24,6 +24,7 @@
 #include "exec/exec-all.h"
 #include "exec/cpu_ldst.h"
 #include "exec/helper-proto.h"
+#include "trace.h"
 
 /* Exceptions processing helpers */
 G_NORETURN void riscv_raise_exception(CPURISCVState *env,
@@ -261,6 +262,8 @@ void helper_sschk_mismatch(CPURISCVState *env, target_ulong rs1,
                            target_ulong ssra)
 {
     if (rs1 != ssra) {
+        trace_zicfiss_sspopchk_reg_mismatch((uint64_t)ssra, (uint64_t) rs1);
+
         env->cfi_violation_code = RISCV_EXCP_SW_CHECK_BCFI_VIOLATION_CODE;
         riscv_raise_exception(env, RISCV_EXCP_SW_CHECK, GETPC());
     }
@@ -290,11 +293,14 @@ void helper_cfi_check_landing_pad(CPURISCVState *env, int lbl)
          * greater than 31 and then shift 12 right
          */
         if (lbl && (lbl != ((env->gpr[xT2] & 0xFFFFFFFF) >> 12))) {
+            trace_zicfilp_lpad_reg_mismatch(lbl, (env->gpr[xT2] & 0xFFFFFFFF) >> 12);
+
             env->cfi_violation_code = RISCV_EXCP_SW_CHECK_FCFI_VIOLATION_CODE;
             riscv_raise_exception(env, RISCV_EXCP_SW_CHECK, GETPC());
         }
 
         env->elp = NO_LP_EXPECTED;
+
     }
 }
 
