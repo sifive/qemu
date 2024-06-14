@@ -1363,7 +1363,6 @@ static void riscv_tr_translate_insn(DisasContextBase *dcbase, CPUState *cpu)
 static void riscv_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
 {
     DisasContext *ctx = container_of(dcbase, DisasContext, base);
-    CPURISCVState *env = cpu_env(cpu);
 
     switch (ctx->base.is_jmp) {
     case DISAS_TOO_MANY:
