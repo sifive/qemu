@@ -2,6 +2,7 @@
 #define RISCV_TARGET_CPU_H
 
 extern void zicfiss_shadow_stack_alloc(CPUArchState *env);
+extern void zicfiss_shadow_stack_release(CPUArchState *env);
 
 static inline void cpu_clone_regs_child(CPURISCVState *env, target_ulong newsp,
                                         unsigned flags)

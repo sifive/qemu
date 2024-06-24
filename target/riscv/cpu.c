@@ -1036,6 +1036,10 @@ static void riscv_cpu_reset_hold(Object *obj, ResetType type)
 
     if (cpu->cfg.ext_cfi_ss) {
         env->ssp = 0;
+
+#ifdef CONFIG_USER_ONLY
+        env->shadow_stack_base = 0;
+#endif
     }
 }
 

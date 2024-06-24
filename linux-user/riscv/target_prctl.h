@@ -1,53 +1,110 @@
-/* No special prctl support required. */
 #ifndef RISCV_TARGET_PRCTL_H
 #define RISCV_TARGET_PRCTL_H
 
-/* -TARGET_EINVAL: Unsupported/Invalid flag for this architecture
- * -TARGET_EACCES: Try to set an already set CFI feature
- * -TARGET_ENOENT: CFI feature is not supported by CPU
- **/
+#define PR_SHADOW_STACK_SUPPORTED_STATUS_MASK (PR_SHADOW_STACK_ENABLE)
+
 static abi_long do_prctl_cfi_set(CPUArchState *env, abi_long option, abi_long flag)
 {
     if (env_archcpu(env)->cfg.ext_cfi_ss) {
         switch (option) {
         case PR_GET_SHADOW_STACK_STATUS:
-            return env->ubcfi_en;
+            {
+                abi_ulong bcfi_status = 0;
+
+                /* this means shadow stack is enabled on the task */
+                bcfi_status |= (env->ubcfi_en ? PR_SHADOW_STACK_ENABLE : 0);
+
+                return copy_to_user(flag, &bcfi_status, sizeof(bcfi_status)) ? \
+                    -EFAULT : 0;
+            }
         case PR_SET_SHADOW_STACK_STATUS:
             {
-                if (env->ubcfi_en)
-                    return -TARGET_EACCES;
-                if (flag & PR_SHADOW_STACK_ENABLE) {
+                bool enable_shstk = false;
+
+                if (env->ubcfi_locked)
+                    return -TARGET_EINVAL;
+
+                /* Reject unknown flags */
+                if (flag & ~PR_SHADOW_STACK_SUPPORTED_STATUS_MASK)
+                    return -TARGET_EINVAL;
+
+                enable_shstk = flag & PR_SHADOW_STACK_ENABLE ? true : false;
+
+                /*
+                 * Request is to enable shadow stack and shadow stack is not
+                 * enabled already.
+                 */
+                if (enable_shstk && !env->ubcfi_en) {
+                    if (env->ssp != 0)
+                        return -TARGET_EINVAL;
+
                     env->ubcfi_en = true;
-                    if (env->ssp == 0)
-                        zicfiss_shadow_stack_alloc(env);
-                    return 0;
+                    zicfiss_shadow_stack_alloc(env);
                 }
-                return -TARGET_EINVAL;
+
+                /*
+                 * Request is to disable shadow stack and shadow stack is
+                 * enabled already.
+                 */
+                if (!enable_shstk && env->ubcfi_en) {
+                    if (env->ssp == 0)
+                        return -TARGET_EINVAL;
+
+                    env->ubcfi_en = false;
+                    zicfiss_shadow_stack_release(env);
+                }
+
+                return 0;
             }
         case PR_LOCK_SHADOW_STACK_STATUS:
-            return -TARGET_EINVAL;
+            {
+                if (!env->ubcfi_en)
+                    return -TARGET_EINVAL;
+
+                env->ubcfi_locked = true;
+                return 0;
+            }
         }
     }
 
     if (env_archcpu(env)->cfg.ext_cfi_lp) {
         switch (option) {
         case PR_GET_INDIR_BR_LP_STATUS:
-            return env->ufcfi_en;
+            {
+                abi_ulong fcfi_status = 0;
+
+                /* indirect branch tracking is enabled on the task or not */
+                fcfi_status |= (env->ufcfi_en ? PR_INDIR_BR_LP_ENABLE : 0);
+
+                return copy_to_user(flag, &fcfi_status, sizeof(fcfi_status)) ? \
+                    -EFAULT : 0;
+            }
         case PR_SET_INDIR_BR_LP_STATUS:
             {
-                if (env->ufcfi_en)
-                    return -TARGET_EACCES;
-                if (flag & PR_INDIR_BR_LP_ENABLE) {
-                    env->ufcfi_en = true;
-                    return 0;
-                }
-                return -TARGET_EINVAL;
+                bool enable_indir_lp = false;
+
+                if (env->ufcfi_locked)
+                    return -TARGET_EINVAL;
+
+                /* Reject random flags */
+                if (flag & ~PR_INDIR_BR_LP_ENABLE)
+                    return -TARGET_EINVAL;
+
+                enable_indir_lp = flag & PR_INDIR_BR_LP_ENABLE ? true : false;
+                env->ufcfi_en = enable_indir_lp;
+                return 0;
             }
         case PR_LOCK_INDIR_BR_LP_STATUS:
-            return -TARGET_EINVAL;
+            {
+                if (!env->ufcfi_en)
+                    return -TARGET_EINVAL;
+
+                env->ufcfi_locked = true;
+                return 0;
+            }
         }
     }
-    return -TARGET_ENOENT;
+    return -TARGET_EINVAL;
 }
 #define do_prctl_cfi_set do_prctl_cfi_set
 
