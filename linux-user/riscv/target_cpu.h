@@ -32,12 +32,12 @@ static inline abi_ulong get_sp_from_cpustate(CPURISCVState *state)
 
 static inline void set_bcfi(CPURISCVState *env)
 {
-   env->ubcfien = true;
+   env->ubcfi_en = true;
 }
 
 static inline void set_fcfi(CPURISCVState *env)
 {
-   env->ufcfien = true;
+   env->ufcfi_en = true;
 }
 
 #endif

@@ -11,13 +11,13 @@ static abi_long do_prctl_cfi_set(CPUArchState *env, abi_long option, abi_long fl
     if (env_archcpu(env)->cfg.ext_cfi_ss) {
         switch (option) {
         case PR_GET_SHADOW_STACK_STATUS:
-            return env->ubcfien;
+            return env->ubcfi_en;
         case PR_SET_SHADOW_STACK_STATUS:
             {
-                if (env->ubcfien)
+                if (env->ubcfi_en)
                     return -TARGET_EACCES;
                 if (flag & PR_SHADOW_STACK_ENABLE) {
-                    env->ubcfien = true;
+                    env->ubcfi_en = true;
                     if (env->ssp == 0)
                         zicfiss_shadow_stack_alloc(env);
                     return 0;
@@ -32,13 +32,13 @@ static abi_long do_prctl_cfi_set(CPUArchState *env, abi_long option, abi_long fl
     if (env_archcpu(env)->cfg.ext_cfi_lp) {
         switch (option) {
         case PR_GET_INDIR_BR_LP_STATUS:
-            return env->ufcfien;
+            return env->ufcfi_en;
         case PR_SET_INDIR_BR_LP_STATUS:
             {
-                if (env->ufcfien)
+                if (env->ufcfi_en)
                     return -TARGET_EACCES;
                 if (flag & PR_INDIR_BR_LP_ENABLE) {
-                    env->ufcfien = true;
+                    env->ufcfi_en = true;
                     return 0;
                 }
                 return -TARGET_EINVAL;

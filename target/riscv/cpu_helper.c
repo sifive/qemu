@@ -66,7 +66,7 @@ int riscv_env_mmu_index(CPURISCVState *env, bool ifetch)
 bool cpu_get_fcfien(CPURISCVState *env)
 {
 #ifdef CONFIG_USER_ONLY
-    return env->ufcfien;
+    return env->ufcfi_en;
 #else
     /* no cfi extension, return false */
     if (!env_archcpu(env)->cfg.ext_cfi_lp) {
@@ -95,7 +95,7 @@ bool cpu_get_fcfien(CPURISCVState *env)
 bool cpu_get_bcfien(CPURISCVState *env)
 {
 #ifdef CONFIG_USER_ONLY
-    return env->ubcfien;
+    return env->ubcfi_en;
 #else
     /* no cfi extension, return false */
     if (!env_archcpu(env)->cfg.ext_cfi_ss) {

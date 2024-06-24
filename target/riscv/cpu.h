@@ -237,8 +237,8 @@ struct CPUArchState {
 
 #ifdef CONFIG_USER_ONLY
     uint32_t elf_flags;
-    bool ubcfien;
-    bool ufcfien;
+    bool ufcfi_en;
+    bool ubcfi_en;
 #endif
 
 #ifndef CONFIG_USER_ONLY
