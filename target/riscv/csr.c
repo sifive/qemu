@@ -195,6 +195,10 @@ static RISCVException cfi_ss(CPURISCVState *env, int csrno)
      * functionality
      */
 #if !defined(CONFIG_USER_ONLY)
+    if (env->debugger) {
+        return RISCV_EXCP_NONE;
+    }
+
     /* current priv not M */
     if (env->priv != PRV_M) {
         /* menvcfg says no shadow stack enable */
