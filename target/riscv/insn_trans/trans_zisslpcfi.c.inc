@@ -78,8 +78,8 @@ static bool trans_sspopchk(DisasContext *ctx, arg_sspopchk *a)
      * the right way
      */
     tcg_gen_addi_tl(addr, addr, tmp);
-    gen_helper_csrw(tcg_env, ssp_csr, addr);
     gen_helper_sschk_mismatch(tcg_env, rs1, data);
+    gen_helper_csrw(tcg_env, ssp_csr, addr);
 
     return true;
 }
