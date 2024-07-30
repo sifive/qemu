@@ -122,9 +122,9 @@ static bool trans_ssamoswap_w(DisasContext *ctx, arg_amoswap_w *a)
     /* default for qemu-user, use regular RW memory and thus mmu_idx=0 */
     int ss_mmu_idx = 0;
 
-    /* back cfi was not enabled, return false */
+    /* back cfi not enabled, should trigger the exception */
     if (!ctx->bcfi_enabled) {
-        return false;
+        gen_helper_ssamoswap_disabled(tcg_env);
     }
 
     TCGv dest = dest_gpr(ctx, a->rd);
@@ -218,9 +218,9 @@ static bool trans_ssamoswap_d(DisasContext *ctx, arg_amoswap_w *a)
     /* default for qemu-user, use regular RW memory and thus mmu_idx=0 */
     int ss_mmu_idx = 0;
 
-    /* back cfi was not enabled, return false */
+    /* back cfi not enabled, should trigger the exception */
     if (!ctx->bcfi_enabled) {
-        return false;
+        gen_helper_ssamoswap_disabled(tcg_env);
     }
 
     TCGv dest = dest_gpr(ctx, a->rd);

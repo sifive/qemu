@@ -288,6 +288,53 @@ void helper_raise_sw_check_excep(CPURISCVState *env, target_ulong swcheck_code,
     riscv_raise_exception(env, RISCV_EXCP_SW_CHECK, GETPC());
 }
 
+void helper_ssamoswap_disabled(CPURISCVState *env)
+{
+    int exception = RISCV_EXCP_ILLEGAL_INST;
+
+#if !defined(CONFIG_USER_ONLY)
+    /*
+     * When effective priv mode is M, any access by an ssamoswap instruction
+     * will result in store/AMO fault exception.
+     */
+    if (env->priv == PRV_M) {
+        exception = RISCV_EXCP_STORE_AMO_ACCESS_FAULT;
+        goto done;
+    }
+
+    /* current priv mode not M, menvcfg says no shadow stack enable */
+    if (!get_field(env->menvcfg, MENVCFG_SSE)) {
+        exception = RISCV_EXCP_ILLEGAL_INST;
+        goto done;
+    }
+
+    /* V = 1 and henvcfg says no shadow stack enable */
+    if (env->virt_enabled &&
+        !get_field(env->henvcfg, HENVCFG_SSE)) {
+        exception = RISCV_EXCP_VIRT_INSTRUCTION_FAULT;
+        goto done;
+    }
+
+    /*
+     * SSP are not accessible to U mode if disabled via senvcfg
+     * CSR
+     */
+    if (env->priv == PRV_U) {
+        if (!get_field(env->senvcfg, SENVCFG_SSE)) {
+            if (env->virt_enabled) {
+                exception = RISCV_EXCP_VIRT_INSTRUCTION_FAULT;
+            } else {
+                exception = RISCV_EXCP_ILLEGAL_INST;
+            }
+            goto done;
+        }
+    }
+
+done:
+#endif
+    riscv_raise_exception(env, exception, GETPC());
+}
+
 #ifndef CONFIG_USER_ONLY
 
 target_ulong helper_sret(CPURISCVState *env)
