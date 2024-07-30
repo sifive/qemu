@@ -217,7 +217,11 @@ static RISCVException cfi_ss(CPURISCVState *env, int csrno)
          */
         if ((env->priv == PRV_U) &&
             (!get_field(env->senvcfg, SENVCFG_SSE))) {
-            return RISCV_EXCP_ILLEGAL_INST;
+            if (env->virt_enabled) {
+                return RISCV_EXCP_VIRT_INSTRUCTION_FAULT;
+            } else {
+                return RISCV_EXCP_ILLEGAL_INST;
+            }
         }
     }
 #endif
