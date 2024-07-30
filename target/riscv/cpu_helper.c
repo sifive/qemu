@@ -111,8 +111,8 @@ bool cpu_get_bcfien(CPURISCVState *env)
             return env->henvcfg & HENVCFG_SSE;
         }
         return env->menvcfg & MENVCFG_SSE;
-    case PRV_M: /* M-mode shadow stack is always on if hart implements */
-        return true;
+    case PRV_M: /* M-mode shadow stack is always off */
+        return false;
     default:
         g_assert_not_reached();
     }
