@@ -605,3 +605,31 @@
 { 'event': 'VFU_CLIENT_HANGUP',
   'data': { 'vfu-id': 'str', 'vfu-qom-path': 'str',
             'dev-id': 'str', 'dev-qom-path': 'str' } }
+
+##
+# @gpio-set:
+#
+# @path: Path to the device.
+#
+# @gpio: Name of the GPIO will be unnamed-gpio if omitted.
+#
+# @number: Number of the GPIO line, 0 if omitted.
+#
+# @value: Value (boolean) to be set for the GPIO.
+#
+#
+# Since 4.1
+#
+# .. qmp-example::
+#
+# -> { "execute": "gpio-set",
+#      "arguments": { "path": "/machine/unattached/device[5]",
+#                     "gpio": "ssi-gpio-cs",
+#                     "number": 0,
+#                     "value": true } }
+# <- { "return": {} }
+#
+##
+{ 'command': 'gpio-set',
+  'data': { 'path': 'str', '*gpio': 'str', '*number': 'int', 'value': 'bool' }
+}
