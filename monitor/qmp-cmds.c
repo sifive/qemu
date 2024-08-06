@@ -31,6 +31,7 @@
 #include "qapi/type-helpers.h"
 #include "hw/mem/memory-device.h"
 #include "hw/intc/intc.h"
+#include "hw/irq.h"
 
 NameInfo *qmp_query_name(Error **errp)
 {
@@ -187,6 +188,30 @@ char *qmp_human_monitor_command(const char *command_line, bool has_cpu_index,
 out:
     monitor_data_destroy(&hmp.common);
     return output;
+}
+
+void qmp_gpio_set(const char *path, const char *gpio,
+                  bool has_number, int64_t number, bool value, Error **errp)
+{
+    DeviceState *dev;
+    qemu_irq irq;
+
+    dev = DEVICE(object_resolve_path(path, NULL));
+    if (!dev) {
+        error_setg(errp, "Device '%s' is not a device", path);
+        return;
+    }
+
+    if (!has_number) {
+        number = 0;
+    }
+    irq = qdev_get_gpio_in_named(dev, gpio ? gpio : NULL, number);
+    if (!irq) {
+        error_setg(errp, "GPIO '%s' doesn't exists", gpio ? gpio : "unnammed");
+        return;
+    }
+
+    qemu_set_irq(irq, value);
 }
 
 static void __attribute__((__constructor__)) monitor_init_qmp_commands(void)
