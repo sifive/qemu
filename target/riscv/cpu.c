@@ -999,6 +999,9 @@ static void riscv_cpu_reset_hold(Object *obj, ResetType type)
     /* on reset elp is set to NO_LP_EXPECTED */
     env->elp = NO_LP_EXPECTED;
 
+    /* on reset ssp is set to 0 */
+    env->ssp = 0;
+
     /*
      * Bits 10, 6, 2 and 12 of mideleg are read only 1 when the Hypervisor
      * extension is enabled.
