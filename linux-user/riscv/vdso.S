@@ -14,6 +14,52 @@
 #endif
 #include "vdso-asmoffset.h"
 
+/* GNU_PROPERTY_RISCV64_* macros from elf.h for use in asm code.  */
+#define FEATURE_1_AND 0xc0000000
+
+#define GNU_PROPERTY(type, value)	\
+  .section .note.gnu.property, "a";	\
+  .p2align 3;                       \
+  .word 4;                          \
+  .word 16;                         \
+  .word 5;                          \
+  .asciz "GNU";                     \
+  .word type;                       \
+  .word 4;                          \
+  .word value;                      \
+  .word 0;                          \
+  .text
+
+/* Add GNU property note with the supported features to all asm code
+   where sysdep.h is included.  */
+#undef __VALUE_FOR_FEATURE_1_AND
+#if defined (__riscv_zicfilp) || defined (__riscv_zicfiss)
+#  if defined (__riscv_zicfilp)
+#    if defined (__riscv_zicfiss)
+#      define __VALUE_FOR_FEATURE_1_AND 0x3
+#    else
+#      define __VALUE_FOR_FEATURE_1_AND 0x1
+#    endif
+#  else
+#    if defined (__riscv_zicfiss)
+#      define __VALUE_FOR_FEATURE_1_AND 0x2
+#    else
+#      error "What?"
+#    endif
+#  endif
+#endif
+
+#if defined (__VALUE_FOR_FEATURE_1_AND)
+GNU_PROPERTY (FEATURE_1_AND, __VALUE_FOR_FEATURE_1_AND)
+#endif
+#undef __VALUE_FOR_FEATURE_1_AND
+
+#ifdef __riscv_zicfilp
+# define LPAD       lpad 1
+#else
+# define LPAD
+#endif
+
 	.text
 
 .macro endf name
@@ -29,6 +75,7 @@
 
 .macro vdso_syscall name, nr
 \name:
+	LPAD
 	raw_syscall \nr
 	ret
 endf	\name
@@ -36,6 +83,7 @@ endf	\name
 
 __vdso_gettimeofday:
 	.cfi_startproc
+	LPAD
 #ifdef __NR_gettimeofday
 	raw_syscall __NR_gettimeofday
 	ret
@@ -86,6 +134,7 @@ vdso_syscall __vdso_getcpu, __NR_getcpu
 
 __vdso_flush_icache:
 	/* qemu does not need to flush the icache */
+	LPAD
 	li	a0, 0
 	ret
 endf __vdso_flush_icache
@@ -181,6 +230,7 @@ endf __vdso_flush_icache
 	nop
 
 __vdso_rt_sigreturn:
+	LPAD
 	raw_syscall __NR_rt_sigreturn
 endf __vdso_rt_sigreturn
 
