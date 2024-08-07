@@ -70,6 +70,9 @@ static bool trans_sspopchk(DisasContext *ctx, arg_sspopchk *a)
     TCGv_i32 ssp_csr = tcg_constant_i32(CSR_SSP);
     TCGv data = tcg_temp_new();
     gen_helper_csrr(addr, tcg_env, ssp_csr);
+#ifndef CONFIG_USER_ONLY
+    ss_mmu_idx = get_ss_index(ctx);
+#endif
 
     tcg_gen_qemu_ld_tl(data, addr, ss_mmu_idx,
                        mxl_memop(ctx) | MO_ALIGN);
@@ -118,6 +121,9 @@ static bool trans_sspush(DisasContext *ctx, arg_sspush *a)
     TCGv_i32 ssp_csr = tcg_constant_i32(CSR_SSP);
     TCGv data = get_gpr(ctx, a->rs2, EXT_NONE);
     gen_helper_csrr(addr, tcg_env, ssp_csr);
+#ifndef CONFIG_USER_ONLY
+    ss_mmu_idx = get_ss_index(ctx);
+#endif
 
     tcg_gen_addi_tl(addr, addr, tmp);
 

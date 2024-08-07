@@ -32,6 +32,7 @@
  *  - S+SUM+2STAGE      0b110
  *  - Shadow stack+U   0b1000
  *  - Shadow stack+S   0b1001
+ *  - Shadow stack+SUM 0b1010
  */
 #define MMUIdx_U            0
 #define MMUIdx_S            1

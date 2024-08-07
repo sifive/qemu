@@ -181,6 +181,9 @@ void cpu_get_tb_cpu_state(CPURISCVState *env, vaddr *pc,
     fs = EXT_STATUS_DIRTY;
     vs = EXT_STATUS_DIRTY;
 #else
+   flags = FIELD_DP32(flags, TB_FLAGS, SUM,
+                    ((env->mstatus & MSTATUS_SUM) == MSTATUS_SUM));
+
     flags = FIELD_DP32(flags, TB_FLAGS, PRIV, env->priv);
 
     flags |= riscv_env_mmu_index(env, 0);

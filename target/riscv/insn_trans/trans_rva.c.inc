@@ -132,6 +132,10 @@ static bool trans_ssamoswap_w(DisasContext *ctx, arg_amoswap_w *a)
 
     decode_save_opc(ctx);
     src1 = get_address(ctx, a->rs1, 0);
+#ifndef CONFIG_USER_ONLY
+    /* Shadow stack access and thus index is SS TLB index */
+    ss_mmu_idx = get_ss_index(ctx);
+#endif
 
     tcg_gen_atomic_xchg_tl(dest, src1, src2, ss_mmu_idx, (MO_ALIGN | MO_TESL));
     gen_set_gpr(ctx, a->rd, dest);
@@ -224,6 +228,10 @@ static bool trans_ssamoswap_d(DisasContext *ctx, arg_amoswap_w *a)
 
     decode_save_opc(ctx);
     src1 = get_address(ctx, a->rs1, 0);
+#ifndef CONFIG_USER_ONLY
+    /* Shadow stack access and thus index is SS TLB index */
+    ss_mmu_idx = get_ss_index(ctx);
+#endif
 
     tcg_gen_atomic_xchg_tl(dest, src1, src2, ss_mmu_idx, (MO_ALIGN | MO_TESQ));
     gen_set_gpr(ctx, a->rd, dest);

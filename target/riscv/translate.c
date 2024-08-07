@@ -122,6 +122,8 @@ typedef struct DisasContext {
     bool fcfi_lp_expected;
     /* zicfiss extension, if shadow stack was enabled during TB gen */
     bool bcfi_enabled;
+    /* SUM was on during tb translation? */
+    bool sum;
 } DisasContext;
 
 static inline bool has_ext(DisasContext *ctx, uint32_t ext)
@@ -1126,6 +1128,29 @@ static uint32_t opcode_at(DisasContextBase *dcbase, target_ulong pc)
 
     return translator_ldl(env, &ctx->base, pc);
 }
+
+#ifndef CONFIG_USER_ONLY
+static unsigned int get_ss_index(DisasContext *ctx)
+{
+    int ss_mmu_idx = MMU_IDX_SS_ACCESS;
+
+    /*
+     * If priv mode is S then a separate index for supervisor
+     * shadow stack accesses
+     */
+    if (ctx->priv == PRV_S) {
+        ss_mmu_idx |= MMUIdx_S;
+    }
+
+    /* If SUM was set, SS index should have S cleared */
+    if (ctx->sum) {
+        ss_mmu_idx &= ~(MMUIdx_S);
+        ss_mmu_idx |= MMUIdx_S_SUM;
+    }
+
+    return ss_mmu_idx;
+}
+#endif
 
 /* Include insn module translation function */
 #include "insn_trans/trans_rvi.c.inc"

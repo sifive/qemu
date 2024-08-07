@@ -631,6 +631,19 @@ FIELD(TB_FLAGS, FCFI_ENABLED, 28, 1)
 FIELD(TB_FLAGS, FCFI_LP_EXPECTED, 29, 1)
 /* zicfiss needs a TB flag so that correct TB is located based on tb flags */
 FIELD(TB_FLAGS, BCFI_ENABLED, 30, 1)
+/*
+ * zicfiss shadow stack is special memory on which regular stores aren't
+ * allowed but shadow stack stores are allowed. Shadow stack stores can
+ * happen as `sspush` or `ssamoswap` instructions. `sspush` implicitly
+ * takes shadow stack address from CSR_SSP. But `ssamoswap` takes address
+ * from encoded input register and it will be used by supervisor software
+ * to access (read/write) user shadow stack for setting up rt_frame during
+ * signal delivery. Supervisor software will do so by setting SUM=1. Thus
+ * a TB flag is needed if SUM was 1 during TB generation to correctly
+ * reflect memory permissions to access shadow stack user memory from
+ * supervisor mode.
+ */
+FIELD(TB_FLAGS, SUM, 31, 1)
 
 #ifdef TARGET_RISCV32
 #define riscv_cpu_mxl(env)  ((void)(env), MXL_RV32)
