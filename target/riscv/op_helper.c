@@ -257,6 +257,13 @@ void helper_cbo_inval(CPURISCVState *env, target_ulong address)
     /* We don't emulate the cache-hierarchy, so we're done. */
 }
 
+void helper_raise_sw_check_excep(CPURISCVState *env, target_ulong swcheck_code,
+                                 target_ulong arg1, target_ulong arg2)
+{
+    env->sw_check_code = swcheck_code;
+    riscv_raise_exception(env, RISCV_EXCP_SW_CHECK, GETPC());
+}
+
 #ifndef CONFIG_USER_ONLY
 
 target_ulong helper_sret(CPURISCVState *env)

@@ -597,6 +597,10 @@ typedef enum {
     LP_EXPECTED = 1,
 } cfi_elp;
 
+typedef enum {
+    MISSING_LPAD = 0,
+} cfi_violation_cause;
+
 /* hstatus CSR bits */
 #define HSTATUS_VSBE         0x00000020
 #define HSTATUS_GVA          0x00000040
@@ -697,6 +701,9 @@ typedef enum RISCVException {
     RISCV_EXCP_STORE_GUEST_AMO_ACCESS_FAULT = 0x17,
     RISCV_EXCP_SEMIHOST = 0x3f,
 } RISCVException;
+
+/* zicfilp defines lp violation results in sw check with tval = 2*/
+#define RISCV_EXCP_SW_CHECK_FCFI_TVAL      2
 
 #define RISCV_EXCP_INT_FLAG                0x80000000
 #define RISCV_EXCP_INT_MASK                0x7fffffff
