@@ -1302,7 +1302,7 @@ static void riscv_tr_tb_start(DisasContextBase *db, CPUState *cpu)
         tcg_gen_brcondi_i32(TCG_COND_EQ, immediate, 0, l);
         gen_helper_raise_sw_check_excep(tcg_env,
             tcg_constant_tl(RISCV_EXCP_SW_CHECK_FCFI_TVAL),
-            tcg_constant_tl(MISSING_LPAD), tcg_constant_tl(0));
+            tcg_constant_tl(MISSING_LPAD), tcg_constant_tl(ctx->base.pc_first));
         gen_set_label(l);
         /*
          * Despite the use of gen_exception_illegal(), the rest of

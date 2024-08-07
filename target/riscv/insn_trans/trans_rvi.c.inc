@@ -65,7 +65,8 @@ static bool trans_lpad(DisasContext *ctx, arg_lpad *a)
              */
             gen_helper_raise_sw_check_excep(tcg_env,
                 tcg_constant_tl(RISCV_EXCP_SW_CHECK_FCFI_TVAL),
-                tcg_constant_tl(MISALIGNED_LPAD), tcg_constant_tl(0));
+                tcg_constant_tl(MISALIGNED_LPAD),
+                tcg_constant_tl(ctx->base.pc_next));
             return true;
         }
     }
@@ -81,7 +82,8 @@ static bool trans_lpad(DisasContext *ctx, arg_lpad *a)
         tcg_gen_brcondi_tl(TCG_COND_EQ, tmp, a->imm_cfi20, skip);
         gen_helper_raise_sw_check_excep(tcg_env,
             tcg_constant_tl(RISCV_EXCP_SW_CHECK_FCFI_TVAL),
-            tcg_constant_tl(LABEL_MISMATCH_LPAD), tcg_constant_tl(0));
+            tcg_constant_tl(LABEL_MISMATCH_LPAD),
+            tcg_constant_tl(a->imm_cfi20));
         gen_set_label(skip);
     }
 

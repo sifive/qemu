@@ -24,6 +24,7 @@
 #include "exec/exec-all.h"
 #include "exec/cpu_ldst.h"
 #include "exec/helper-proto.h"
+#include "trace.h"
 
 /* Exceptions processing helpers */
 G_NORETURN void riscv_raise_exception(CPURISCVState *env,
@@ -260,6 +261,29 @@ void helper_cbo_inval(CPURISCVState *env, target_ulong address)
 void helper_raise_sw_check_excep(CPURISCVState *env, target_ulong swcheck_code,
                                  target_ulong arg1, target_ulong arg2)
 {
+    switch (swcheck_code) {
+    case RISCV_EXCP_SW_CHECK_FCFI_TVAL:
+        switch (arg1) {
+        case MISSING_LPAD:
+            trace_zicfilp_missing_lpad_instr(arg2);
+            break;
+        case MISALIGNED_LPAD:
+            trace_zicfilp_unaligned_lpad_instr(arg2);
+            break;
+        case LABEL_MISMATCH_LPAD:
+            trace_zicfilp_lpad_reg_mismatch(arg2);
+            break;
+        }
+        break;
+    case RISCV_EXCP_SW_CHECK_BCFI_TVAL:
+        trace_zicfiss_sspopchk_reg_mismatch(arg1, arg2);
+        break;
+    default:
+        /* any other value of swcheck_code is asserted */
+        assert(swcheck_code || (swcheck_code == 0));
+        break;
+    }
+
     env->sw_check_code = swcheck_code;
     riscv_raise_exception(env, RISCV_EXCP_SW_CHECK, GETPC());
 }
