@@ -599,6 +599,8 @@ typedef enum {
 
 typedef enum {
     MISSING_LPAD = 0,
+    MISALIGNED_LPAD = 1,
+    LABEL_MISMATCH_LPAD = 2,
 } cfi_violation_cause;
 
 /* hstatus CSR bits */

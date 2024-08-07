@@ -36,6 +36,58 @@ static bool trans_lui(DisasContext *ctx, arg_lui *a)
     return true;
 }
 
+static bool trans_lpad(DisasContext *ctx, arg_lpad *a)
+{
+    bool lp_expected;
+    /* zicfilp only supported on 32bit and 64bit */
+    if (get_xl(ctx) != MXL_RV32 && get_xl(ctx) != MXL_RV64) {
+        return false;
+    }
+
+    lp_expected = ctx->fcfi_lp_expected;
+    /* forward cfi not enabled or lp not expected, return false */
+    if (!ctx->fcfi_enabled) {
+        return false;
+    }
+
+    /*
+     * If this is the first instruction of the TB, let the translator
+     * know the landing pad requirement was satisfied. No need to bother
+     * checking for CFI feature or enablement.
+     */
+
+    if (ctx->base.pc_next == ctx->base.pc_first) {
+        ctx->fcfi_lp_expected = false;
+        /* If landing pad was expected, PC must be 4 byte aligned */
+        if (lp_expected && ((ctx->base.pc_next) & 0x3)) {
+            /*
+             * misaligned, according to spec we should raise sw check exception
+             */
+            gen_helper_raise_sw_check_excep(tcg_env,
+                tcg_constant_tl(RISCV_EXCP_SW_CHECK_FCFI_TVAL),
+                tcg_constant_tl(MISALIGNED_LPAD), tcg_constant_tl(0));
+            return true;
+        }
+    }
+
+    /* if lp was expected, do label check */
+    if (lp_expected) {
+        TCGLabel *skip = gen_new_label();
+        TCGv tmp = tcg_temp_new();
+        tcg_gen_st_tl(tcg_constant_tl(NO_LP_EXPECTED),
+                      tcg_env, offsetof(CPURISCVState, elp));
+        tcg_gen_extract_tl(tmp, get_gpr(ctx, xT2, EXT_NONE), 12, 20);
+        tcg_gen_brcondi_tl(TCG_COND_EQ, tcg_constant_tl(a->imm_cfi20), 0, skip);
+        tcg_gen_brcondi_tl(TCG_COND_EQ, tmp, a->imm_cfi20, skip);
+        gen_helper_raise_sw_check_excep(tcg_env,
+            tcg_constant_tl(RISCV_EXCP_SW_CHECK_FCFI_TVAL),
+            tcg_constant_tl(LABEL_MISMATCH_LPAD), tcg_constant_tl(0));
+        gen_set_label(skip);
+    }
+
+    return true;
+}
+
 static bool trans_auipc(DisasContext *ctx, arg_auipc *a)
 {
     TCGv target_pc = dest_gpr(ctx, a->rd);
@@ -75,6 +127,20 @@ static bool trans_jalr(DisasContext *ctx, arg_jalr *a)
     gen_set_gpr(ctx, a->rd, succ_pc);
 
     tcg_gen_mov_tl(cpu_pc, target_pc);
+    if (ctx->cfg_ptr->ext_zicfilp && ctx->fcfi_enabled) {
+        /*
+         * Rely on a helper to check the forward CFI enable for the
+         * current process mode. The alternatives would be (1) include
+         * "fcfi enabled" in the cflags or (2) maintain a "fcfi
+         * currently enabled" in tcg_env and emit TCG code to access
+         * and test it.
+         */
+        if (a->rs1 != xRA && a->rs1 != xT0 && a->rs1 != xT2) {
+            tcg_gen_st_tl(tcg_constant_tl(LP_EXPECTED),
+                          tcg_env, offsetof(CPURISCVState, elp));
+        }
+    }
+
     lookup_and_goto_ptr(ctx);
 
     if (misaligned) {
