@@ -995,6 +995,9 @@ static void riscv_cpu_reset_hold(Object *obj, ResetType type)
     /* mmte is supposed to have pm.current hardwired to 1 */
     env->mmte |= (EXT_STATUS_INITIAL | MMTE_M_PM_CURRENT);
 
+    /* on reset elp is set to NO_LP_EXPECTED */
+    env->elp = NO_LP_EXPECTED;
+
     /*
      * Bits 10, 6, 2 and 12 of mideleg are read only 1 when the Hypervisor
      * extension is enabled.

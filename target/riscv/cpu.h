@@ -230,6 +230,8 @@ struct CPUArchState {
 
     target_ulong jvt;
 
+    /* elp state for zicfilp extension */
+    cfi_elp      elp;
 #ifdef CONFIG_USER_ONLY
     uint32_t elf_flags;
 #endif
