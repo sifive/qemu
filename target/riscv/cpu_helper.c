@@ -823,6 +823,18 @@ void riscv_cpu_set_mode(CPURISCVState *env, target_ulong newpriv, bool virt_en)
     }
 }
 
+static bool legal_sstack_access(int access_type, bool sstack_inst,
+                                bool sstack_attribute)
+{
+    /*
+     * Read/write/execution permissions are checked as usual. Shadow
+     * stack enforcement is just that (1) instruction type must match
+     * the attribute unless (2) a non-SS load to an SS region.
+     */
+    return (sstack_inst == sstack_attribute) ||
+        ((access_type == MMU_DATA_LOAD) && sstack_attribute);
+}
+
 /*
  * get_physical_address_pmp - check PMP permission for this physical address
  *
@@ -900,6 +912,8 @@ static int get_physical_address(CPURISCVState *env, hwaddr *physical,
     hwaddr ppn;
     int napot_bits = 0;
     target_ulong napot_mask;
+    bool is_sstack_insn = ((mmu_idx & MMU_IDX_SS_ACCESS) == MMU_IDX_SS_ACCESS);
+    bool sstack_page = false;
 
     /*
      * Check if we should use the background registers for the two
@@ -1108,15 +1122,46 @@ restart:
         return TRANSLATE_FAIL;
     }
 
+    /*
+     * When backward CFI is enabled, the R=0, W=1, X=0 reserved encoding
+     * is used to mark Shadow Stack (SS) pages. If back CFI enabled, allow
+     * normal loads on SS pages, regular stores raise store access fault
+     * and avoid hitting the reserved-encoding case. Only shadow stack
+     * stores are allowed on SS pages. Shadow stack loads and stores on
+     * regular memory (non-SS) raise load and store/AMO access fault.
+     * Second stage translations don't participate in Shadow Stack.
+     */
+    sstack_page = (cpu_get_bcfien(env) && first_stage &&
+                  ((pte & (PTE_R | PTE_W | PTE_X)) == PTE_W));
+
     /* Check for reserved combinations of RWX flags. */
     switch (pte & (PTE_R | PTE_W | PTE_X)) {
-    case PTE_W:
     case PTE_W | PTE_X:
+        return TRANSLATE_FAIL;
+    case PTE_W:
+        if (sstack_page) { /* if shadow stack page, PTE_W is not reserved */
+            break;
+        }
         return TRANSLATE_FAIL;
     }
 
+    /* Illegal combo of instruction type and page attribute */
+    if (!legal_sstack_access(access_type, is_sstack_insn,
+                            sstack_page)) {
+        /* shadow stack instruction and RO page then it's a page fault */
+        if (is_sstack_insn && ((pte & (PTE_R | PTE_W | PTE_X)) == PTE_R)) {
+                return TRANSLATE_FAIL;
+        }
+        /* In all other cases it's an access fault, so raise PMP_FAIL */
+        return TRANSLATE_PMP_FAIL;
+    }
+
     int prot = 0;
-    if (pte & PTE_R) {
+    /*
+     * If PTE has read bit in it or it's shadow stack page,
+     * then reads allowed
+     */
+    if ((pte & PTE_R) || sstack_page) {
         prot |= PAGE_READ;
     }
     if (pte & PTE_W) {
@@ -1354,9 +1399,17 @@ void riscv_cpu_do_unaligned_access(CPUState *cs, vaddr addr,
         break;
     case MMU_DATA_LOAD:
         cs->exception_index = RISCV_EXCP_LOAD_ADDR_MIS;
+        /* shadow stack mis aligned accesses are access faults */
+        if (mmu_idx & MMU_IDX_SS_ACCESS) {
+            cs->exception_index = RISCV_EXCP_LOAD_ACCESS_FAULT;
+        }
         break;
     case MMU_DATA_STORE:
         cs->exception_index = RISCV_EXCP_STORE_AMO_ADDR_MIS;
+        /* shadow stack mis aligned accesses are access faults */
+        if (mmu_idx & MMU_IDX_SS_ACCESS) {
+            cs->exception_index = RISCV_EXCP_STORE_AMO_ACCESS_FAULT;
+        }
         break;
     default:
         g_assert_not_reached();
@@ -1411,6 +1464,11 @@ bool riscv_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
 
     qemu_log_mask(CPU_LOG_MMU, "%s ad %" VADDR_PRIx " rw %d mmu_idx %d\n",
                   __func__, address, access_type, mmu_idx);
+
+    /* If shadow stack instruction initiated this access, treat it as store */
+    if (mmu_idx & MMU_IDX_SS_ACCESS) {
+        access_type = MMU_DATA_STORE;
+    }
 
     pmu_tlb_fill_incr_ctr(cpu, access_type);
     if (two_stage_lookup) {
