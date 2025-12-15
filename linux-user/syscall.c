@@ -6364,14 +6364,14 @@ abi_long do_arch_prctl(CPUX86State *env, int code, abi_ulong addr)
 # define PR_LOCK_SHADOW_STACK_STATUS    76
 #endif
 #ifndef PR_GET_INDIR_BR_LP_STATUS
-# define PR_GET_INDIR_BR_LP_STATUS      77
+# define PR_GET_INDIR_BR_LP_STATUS      79
 #endif
 #ifndef PR_SET_INDIR_BR_LP_STATUS
-# define PR_SET_INDIR_BR_LP_STATUS      78
+# define PR_SET_INDIR_BR_LP_STATUS      80
 # define PR_INDIR_BR_LP_ENABLE          (1UL << 0)
 #endif
 #ifndef PR_LOCK_INDIR_BR_LP_STATUS
-# define PR_LOCK_INDIR_BR_LP_STATUS     79
+# define PR_LOCK_INDIR_BR_LP_STATUS     81
 #endif
 #ifndef SHADOW_STACK_SET_TOKEN
 # define SHADOW_STACK_SET_TOKEN  (1u << 0)
