@@ -6373,6 +6373,9 @@ abi_long do_arch_prctl(CPUX86State *env, int code, abi_ulong addr)
 #ifndef PR_LOCK_INDIR_BR_LP_STATUS
 # define PR_LOCK_INDIR_BR_LP_STATUS     79
 #endif
+#ifndef SHADOW_STACK_SET_TOKEN
+# define SHADOW_STACK_SET_TOKEN  (1u << 0)
+#endif
 
 #include "target_prctl.h"
 
@@ -6573,6 +6576,92 @@ static abi_long do_prctl(CPUArchState *env, abi_long option, abi_long arg2,
         return -TARGET_EINVAL;
     }
 }
+
+#if defined(TARGET_AARCH64) || defined(TARGET_RISCV)
+static abi_long do_map_shadow_stack(CPUArchState *env, abi_ulong addr,
+                                    abi_ulong size, abi_int flags)
+{
+    abi_ulong alloc_size;
+
+#ifdef TARGET_AARCH64
+    ARMCPU *cpu = env_archcpu(env);
+    if (!cpu_isar_feature(aa64_gcs, cpu)) {
+        return -TARGET_EOPNOTSUPP;
+    }
+    if (flags & ~(SHADOW_STACK_SET_TOKEN | SHADOW_STACK_SET_MARKER)) {
+        return -TARGET_EINVAL;
+    }
+#elif defined(TARGET_RISCV)
+    const int SHSTK_ENTRY_SIZE = sizeof(abi_ulong);
+    if (!env->ubcfi_en) {
+        return -TARGET_EOPNOTSUPP;
+    }
+    if (flags & ~SHADOW_STACK_SET_TOKEN) {
+        return -TARGET_EINVAL;
+    }
+    if ((flags & SHADOW_STACK_SET_TOKEN) && size < SHSTK_ENTRY_SIZE) {
+		return -TARGET_EINVAL;
+    }
+#endif
+    if (addr & ~TARGET_PAGE_MASK) {
+        return -TARGET_EINVAL;
+    }
+
+#ifdef TARGET_AARCH64
+    if (size == 8 || !QEMU_IS_ALIGNED(size, 8)) {
+        return -TARGET_EINVAL;
+    }
+#endif
+
+    alloc_size = TARGET_PAGE_ALIGN(size);
+    if (alloc_size < size) {
+        return -TARGET_EOVERFLOW;
+    }
+
+#ifdef TARGET_AARCH64
+    mmap_lock();
+    addr = gcs_alloc(addr, alloc_size);
+    if (addr != -1) {
+        if (flags & SHADOW_STACK_SET_TOKEN) {
+            abi_ptr cap_ptr = addr + size - 8;
+            uint64_t cap_val;
+
+            if (flags & SHADOW_STACK_SET_MARKER) {
+                /* Leave an extra empty frame at top-of-stack. */
+                cap_ptr -= 8;
+            }
+            cap_val = (cap_ptr & TARGET_PAGE_MASK) | 1;
+            if (put_user_u64(cap_val, cap_ptr)) {
+                /* Allocation succeeded above. */
+                g_assert_not_reached();
+            }
+        }
+    }
+    mmap_unlock();
+#elif defined(TARGET_RISCV)
+    mmap_lock();
+    addr = target_mmap(addr, size, PROT_READ | PROT_WRITE,
+                       MAP_PRIVATE | MAP_ANONYMOUS |
+                       (addr ? MAP_FIXED_NOREPLACE : 0), -1, 0);
+    mmap_unlock();
+    if (flags & SHADOW_STACK_SET_TOKEN) {
+        abi_ulong ssp = addr + size;
+
+        if (QEMU_IS_ALIGNED (ssp, SHSTK_ENTRY_SIZE)) {
+            return -TARGET_EINVAL;
+        }
+
+	addr = ssp - SHSTK_ENTRY_SIZE;
+
+        if (put_user_u64(addr, ssp)) {
+            /* Allocation succeeded above. */
+            g_assert_not_reached();
+        }
+    }
+#endif
+    return get_errno(addr);
+}
+#endif
 
 #define NEW_STACK_SIZE 0x40000
 
@@ -13920,6 +14009,11 @@ static abi_long do_syscall1(CPUArchState *cpu_env, int num, abi_long arg1,
 #if defined(TARGET_NR_riscv_hwprobe)
     case TARGET_NR_riscv_hwprobe:
         return do_riscv_hwprobe(cpu_env, arg1, arg2, arg3, arg4, arg5);
+#endif
+
+#if defined(TARGET_AARCH64) || defined(TARGET_RISCV)
+    case TARGET_NR_map_shadow_stack:
+        return do_map_shadow_stack(cpu_env, arg1, arg2, arg3);
 #endif
 
     default:
